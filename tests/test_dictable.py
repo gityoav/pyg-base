@@ -1,4 +1,4 @@
-from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, encode, decode, mongo_table, is_tuple
+from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, encode, decode, is_tuple
 import pandas as pd
 import numpy as np
 import pytest
@@ -74,18 +74,18 @@ def test_dictable_get():
     
     
 
-def test_dictable_init_from_cursor():
-    t = mongo_table('test', 'test')
-    t.drop()
-    d = dictable(a = [1,2,3], b = [4,5,6])
-    t.insert_many(d)
-    c = t[::]
-    assert c[['a', 'b']] == d
-    c = dictable(t)
-    assert c[['a', 'b']] == d
-    c = dictable(t.collection)
-    assert c[['a', 'b']] == d
-    t.drop()
+# def test_dictable_init_from_cursor():
+#     t = mongo_table('test', 'test')
+#     t.drop()
+#     d = dictable(a = [1,2,3], b = [4,5,6])
+#     t.insert_many(d)
+#     c = t[::]
+#     assert c[['a', 'b']] == d
+#     c = dictable(t)
+#     assert c[['a', 'b']] == d
+#     c = dictable(t.collection)
+#     assert c[['a', 'b']] == d
+#     t.drop()
 
 def test_dictable_shape():
     assert dictable().shape == (0,0)

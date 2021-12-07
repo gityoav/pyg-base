@@ -4,14 +4,22 @@ from pyg_base._cache import get_cache
 from _collections_abc import dict_keys, dict_values
 
 
-DAG = 'DAG'
-GAD = 'GAD'
-
 """
 This module is designed to remove dependency on networkx as it is slow to load and run
 Since we only use topological_sort, our implementation is more specialized and hence faster (we don't test for cyclic nature of graph etc.)
 """
-    
+
+def get_DAG(dag = None):
+    return dag if isinstance(dag, dict) else get_cache('DAG', dag)
+
+def get_DAGs():
+    return get_cache('DAG')
+
+def get_GAD(dag = None):
+    return dag if isinstance(dag, dict) else get_cache('GAD', dag)
+
+def get_GADs():
+    return get_cache('GAD')
 
 def topological_sort(dag, node):    
     """
@@ -182,17 +190,7 @@ def descendants(dag, node, exc = None):
         return sum(map(list,nodes), [])
 
 
-def get_DAG(dag = None):
-    return get_cache(DAG, dag)
 
-def get_DAGs():
-    return get_cache(DAG)
-
-def get_GAD(dag = None):
-    return get_cache(GAD, dag)
-
-def get_GADs():
-    return get_cache(GAD)
 
 
 def dag_inverse(dag = None):

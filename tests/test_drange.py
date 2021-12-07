@@ -1,4 +1,4 @@
-from pyg import drange, Calendar, calendar, clock, dt, date_range, DAY, timer, eq, as_time, TMIN, TMAX, dt_bump
+from pyg_base import drange, Calendar, calendar, clock, dt, date_range, DAY, timer, eq, as_time, TMIN, TMAX, dt_bump
 import datetime
 import pandas as pd; import numpy as np
 import pytest

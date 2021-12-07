@@ -1,4 +1,4 @@
-from pyg_base import presync, dt, drange, eq, ts_sum
+from pyg_base import presync, dt, drange, eq
 from pyg_base import df_fillna, df_reindex, nona, reducing, Dict, np_reindex
 import pandas as pd; import numpy as np
 import pytest
@@ -229,7 +229,7 @@ def test_presync_various():
     b = pd.DataFrame(np.random.normal(0,1,(100,10)), drange(-99))
 
     def f(a, b):
-        return (a*b, ts_sum(a), ts_sum(b))
+        return (a*b, a.sum(axis=0), b.sum(axis=0))
 
     old = f(a,b)    
     self = presync(f)

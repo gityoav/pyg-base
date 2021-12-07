@@ -1,7 +1,6 @@
-from pyg_base import acell, cell, cell_func, dictattr, dt, getargspec, passthru, add_
-from pyg_base._cell import cell_output, cell_item, cell_inputs, UPDATED, _updated
+from pyg_base import acell, cell, cell_func, dictattr, dt, getargspec, passthru, add_, get_cache
+from pyg_base._cell import cell_output, cell_item, cell_inputs, _updated
 import pytest
-from pyg_base import get_cell, cell_push, cell_pull, GRAPH
 from pyg_base import * 
 
 def test_cell():
@@ -183,20 +182,21 @@ def test_cell_inputs():
 def test_cell_push_and_updated():
     a = cell(passthru, data = 1, pk = 'i', i = 0)()
     b = cell(passthru, data = 2, pk = 'i', i = 1)()
+    GRAPH = get_cache('GRAPH')
     assert a._address in GRAPH and b._address in GRAPH
+    a_ = a; b_ = b
     for i in range(2, 10):
-        c = cell(add_, a = a, b = b, pk = 'i', i = i)().pull()
-        a = b
-        b = c
-    cell_push()
+        c = cell(add_, a = a_, b = b_, pk = 'i', i = i)()
+        a_ = b_
+        b_ = c
+    a = a.push()
+    UPDATED = get_cache('UPDATED')
     assert len(UPDATED) == 0
     assert c.data == 89
-    assert get_cell(i = 9).data == 89
-    c = get_cell(i = 1).go()
+    b = b.go()
     assert list(UPDATED.keys()) == [(('i', 1),)]
     c.data = 3
-    cell_push()
-    assert get_cell(i = 9).data == 123    
+    b = b.push()
     assert UPDATED == {}
 
 

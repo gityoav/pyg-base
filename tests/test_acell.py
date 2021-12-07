@@ -1,5 +1,5 @@
 import pytest
-from pyg_base import add_, cell, acell, GRAPH, get_data
+from pyg_base import add_, cell, acell, get_cache
 from pyg_base import *  
 
 @pytest.mark.asyncio
@@ -24,6 +24,7 @@ async def test_acell_basic():
 
 @pytest.mark.asyncio
 async def test_acell_and_GRAPH():
+    GRAPH = get_cache('GRAPH')
     g = GRAPH.copy()
 
     a = acell(add_, a = 1, b = 2, pk = 'key', key = 'a')
@@ -39,7 +40,7 @@ async def test_acell_and_GRAPH():
     assert c._address in GRAPH
     assert d._address in GRAPH
 
-    assert get_data(key = 'd') == 15
+    assert d.data == 15
 
     a = await a.load(-1)
     b = await b.load(-1)
@@ -62,12 +63,11 @@ async def test_acell_and_push():
     d = acell(add_, a = c, b = b, pk = 'key', key = 'd')    
     
     d = await d()
-    assert get_data(key = 'd') == 15
+    assert d.data == 15
 
     # now we push...
     a.a = 3
     a = await a.push()
-    assert get_data(key = 'd') == 25    
     assert a.data == 5
     assert (await d.load()).data == 25    
 

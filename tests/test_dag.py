@@ -1,4 +1,4 @@
-from pyg import get_DAG, add_edge, del_edge, topological_sort, descendants, dict_invert, timer
+from pyg_base import get_DAG, add_edge, del_edge, topological_sort, descendants, dict_invert, timer
 from pyg_base._dag import get_DAGs
 import networkx as nx
 

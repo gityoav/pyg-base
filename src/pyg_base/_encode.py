@@ -104,7 +104,7 @@ def decode(value, date = None):
 loads = partial(decode, date = True)
 
 @loop(list, tuple)
-def _encode(value):
+def _encode(value, unchanged = None):
     if hasattr(value, '_encode') and not isinstance(value, type):
         res = value._encode
         if not isinstance(res, str):
@@ -118,14 +118,16 @@ def _encode(value):
         return float(value)
     elif is_date(value):
         return value if isinstance(value, datetime.datetime) else dt(value) 
-    elif value is None or is_str(value):
-        return value
     elif isinstance(value, Enum):
         return _as_primitive(value.value)
+    elif value is None or is_str(value):
+        return value
+    elif unchanged and isinstance(value, unchanged):
+         return value
     elif isinstance(value, dict):
-        res = {k : _encode(v) for k, v in value.items()}
+        res = {k : _encode(v, unchanged) for k, v in value.items()}
         if _obj not in res and type(value)!=dict:
-            res[_obj] = _encode(type(value))
+            res[_obj] = _encode(type(value), unchanged)
         return res
     elif is_pd(value):
         return {_data : pd2bson(value), _obj : _bson2pd}
@@ -168,7 +170,7 @@ def as_primitive(value):
     return _as_primitive(value)
 
 
-def encode(value):
+def encode(value, unchanged = None):
     """
     
     encode/decode are performed prior to sending to mongodb or after retrieval from db. 
@@ -207,7 +209,7 @@ def encode(value):
     A pre-json object
 
     """
-    return _encode(value)
+    return _encode(value, unchanged)
 
 def pd2bson(value):
     """

@@ -1,4 +1,4 @@
-from pyg_base import join, perdictable, ewma, dictable, dt, getargspec, drange, eq, dt_bump, div_, mul_, add_, sub_, pow_
+from pyg_base import join, perdictable, dictable, dt, getargspec, drange, eq, dt_bump, div_, mul_, add_, sub_, pow_
 import pandas as pd; import numpy as np
 import pytest
 
