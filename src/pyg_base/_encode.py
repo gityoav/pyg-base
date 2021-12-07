@@ -9,8 +9,8 @@ import pickle
 import datetime
 from functools import partial
 from enum import Enum
-from bson.binary import Binary
-from bson.objectid import ObjectId
+# from bson.binary import Binary
+# from bson.objectid import ObjectId
 import numpy as np
 
 
@@ -122,8 +122,6 @@ def _encode(value):
         return value
     elif isinstance(value, Enum):
         return _as_primitive(value.value)
-    elif isinstance(value, ObjectId):
-         return value
     elif isinstance(value, dict):
         res = {k : _encode(v) for k, v in value.items()}
         if _obj not in res and type(value)!=dict:
@@ -215,7 +213,7 @@ def pd2bson(value):
     """
     converts a value (usually a pandas.DataFrame/Series) to bytes using pickle
     """
-    return Binary(pickle.dumps(value))
+    return pickle.dumps(value)
 
 
 def pd2pa(value):
