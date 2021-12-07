@@ -1,5 +1,5 @@
-numpy>=1.19.1
-scipy>=1.5.0
-pandas>=1.1.0
-jsonpickle>=1.2
-fastparquet>=0.4.1
+numpy
+scipy
+pandas
+jsonpickle
+fastparquet
