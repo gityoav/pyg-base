@@ -23,7 +23,7 @@ requirements:
         - pandas        >=1.1.0
         - jsonpickle    >=1.2
         - fastparquet   >=0.4.1
-        
+
 about:
     home: https://github.com/gityoav/pyg-base
     license: GNU
