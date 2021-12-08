@@ -235,7 +235,9 @@ def test_presync_various():
     self = presync(f)
     args = (); kwargs = dict(a = a, b = b)
     new = self(*args, **kwargs)
-    assert eq(new, old)
+    assert abs(new[1]-old[1]).max() < 1e-10
+    assert abs(new[2]-old[2]).max() < 1e-10
+    assert abs(new[0]-old[0]).max().max() < 1e-10
 
 
 

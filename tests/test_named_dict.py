@@ -30,7 +30,7 @@ def test_named_dict_with_defaults():
 
 
 def test_named_dict_with_types_checking():
-    Customer = named_dict('Customer', ['name', 'date', 'balance'], defaults = dict(balance = 0), types = dict(date = 'datetime.datetime', balance = 'pyg.is_num'))
+    Customer = named_dict('Customer', ['name', 'date', 'balance'], defaults = dict(balance = 0), types = dict(date = 'datetime.datetime', balance = 'pyg_base.is_num'))
     james = Customer('james', datetime.datetime.now())
     assert james['balance'] == 0
     with pytest.raises(TypeError):
@@ -44,7 +44,7 @@ def test_named_dict_with_casting():
     Customer = named_dict('Customer', ['name', 'date', 'balance'], 
                           defaults = dict(balance = 0), 
                           types = dict(date = 'datetime.datetime'), 
-                          casts = dict(balance = 'float', date = 'pyg.dt'))
+                          casts = dict(balance = 'float', date = 'pyg_base.dt'))
     james = Customer('james', 2000, balance = '10.3')
     assert james['balance'] == 10.3
     assert james['date'] == datetime.datetime(2000,1,1)

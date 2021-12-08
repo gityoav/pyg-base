@@ -16,7 +16,7 @@ def pd_to_parquet(value, path, compression = 'GZIP'):
 
     :Example:
     -------
-    >>> from pyg import *
+    >>> from pyg_base import *
     >>> import pandas as pd
     >>> import pytest
 
