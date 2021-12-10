@@ -157,11 +157,11 @@ def test_cell_go_levels():
     e0 = e()
     assert e0.data == e.data
     e1 = e.go(1) 
-    assert e1.data > e.data and e1.t1.data == e.t1.data
+    assert e1.data >= e.data and e1.t1.data == e.t1.data
     e2 = e.go(2) 
-    assert e2.data > e.data and e2.t1.data > e.t1.data and e2.t1.t1.data == e.t1.t1.data
+    assert e2.data >= e.data and e2.t1.data >= e.t1.data and e2.t1.t1.data == e.t1.t1.data
     g = e.go(-1)
-    assert g.data > e.data and g.t1.data > e.t1.data and g.t1.t1.data > e.t1.t1.data and g.t1.t1.t1.data > e.t1.t1.t1.data
+    assert g.data >= e.data and g.t1.data >= e.t1.data and g.t1.t1.data >= e.t1.t1.data and g.t1.t1.t1.data >= e.t1.t1.t1.data
     
     
 def test_cell_inputs():

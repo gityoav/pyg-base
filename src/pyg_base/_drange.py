@@ -2,13 +2,11 @@ from pyg_base._dates import dt, DAY, TMIN, TMAX, dt_bump, is_period, is_bump, ym
 from pyg_base._types import is_int, is_str, is_ts, is_arr, is_pd, is_nan
 from pyg_base._as_list import as_list 
 from pyg_base._dict import Dict
+from pyg_base._cache import cache
 import datetime
 from dateutil.rrule import rrule, MONTHLY, WEEKLY, DAILY, YEARLY, HOURLY, MINUTELY, SECONDLY, MO, TU, WE, TH, FR, SA, SU
 from dateutil import tz
 from pytz import country_timezones
-from functools import lru_cache
-import functools
-import dateutil as du
 
 
 import numpy as np
@@ -25,7 +23,7 @@ isoformat = re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
     
 __all__ = ['date_range', 'drange', 'calendar', 'Calendar', 'clock', 'as_time']
 
-@lru_cache
+@cache
 def tzones():
     x = {iso :country_timezones[iso] for iso in country_timezones}
     tzs = {iso: code[0] for iso, code in x.items() if len(code) == 1}
