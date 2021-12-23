@@ -87,8 +87,8 @@ def test_topological_sort():
 
     G = dag2G(dag)
     nodes = {node} | nx.descendants(G, node)
-    t0 = timer(topological_sort, n = 100, time = True)(dag, node)
-    t1 = timer(_nx_topological_sort, n = 100, time = True)(G, nodes)
+    t0 = timer(topological_sort, n = 1000, time = True)(dag, node)
+    t1 = timer(_nx_topological_sort, n = 1000, time = True)(G, nodes)
     assert t1 / t0 
 
 
