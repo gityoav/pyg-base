@@ -463,7 +463,8 @@ class cell(dictattr):
         missing = pk - self.keys()
         if len(missing):
             logger.warning('WARN: document not loaded as some keys are missing %s'%missing)
-            return self            
+            return self     
+        GRAPH = get_cache('GRAPH')
         if mode == -1:
             if address in GRAPH:
                 del GRAPH[address]
@@ -634,11 +635,14 @@ class cell(dictattr):
             else:
                 c[output[0]] = res
             if address:
+                GRAPH = get_cache('GRAPH')
+                UPDATED = get_cache('UPDATED')
                 UPDATED[address] = datetime.datetime.now()
                 GRAPH[address] = c
             return c
         else:
             if address:
+                GRAPH = get_cache('GRAPH')
                 GRAPH[address] = self
             return self
                     

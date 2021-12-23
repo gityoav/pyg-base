@@ -2,7 +2,7 @@ from pyg_base._as_float import as_float
 from pyg_base._as_list import as_list, as_tuple, first, last, passthru, unique, is_rng
 from pyg_base._acell import acell, acell_load, acell_func, acell_go
 from pyg_base._cache import cache, get_cache
-from pyg_base._cell import cell, cell_go, cell_item, cell_func, cell_load, cell_output, cell_clear, cell_inputs, GRAPH, UPDATED
+from pyg_base._cell import cell, cell_go, cell_item, cell_func, cell_load, cell_output, cell_clear, cell_inputs
 from pyg_base._cfg import mkdir, cfg_read, cfg_write, CFG
 from pyg_base._dates import dt,dt_bump, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month
 from pyg_base._dag import get_DAG, get_DAGs, get_GADs, get_GAD, add_edge, topological_sort, descendants, del_edge
