@@ -11,11 +11,11 @@ We then need to worry about multiple columns if there are. If none, each timeser
 If there are multiple columns, we will perform the calculations columns by columns. 
 
 """
-from pyg_base._types import is_df, is_str, is_num, is_tss, is_int, is_arr, is_pd, is_ts, is_arrs, is_tuples
+from pyg_base._types import is_df, is_str, is_num, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
-from pyg_base._reducer import reducing
+from pyg_base._reducer import reducing, reducer
 from pyg_base._decorators import  wrapper
 from pyg_base._loop import loop
 from pyg_base._dates import dt
@@ -24,9 +24,10 @@ import numpy as np
 from copy import copy
 import inspect
 import datetime
+from operator import add, mul
 
 
-__all__ = ['df_fillna', 'df_index', 'df_reindex', 'df_columns', 'presync', 'np_reindex', 'nona', 'df_slice', 'df_unslice', 'add_', 'mul_', 'sub_', 'div_', 'pow_']
+__all__ = ['df_fillna', 'df_index', 'df_reindex', 'df_columns', 'presync', 'np_reindex', 'nona', 'df_slice', 'df_unslice', 'min_', 'max_', 'add_', 'mul_', 'sub_', 'div_', 'pow_']
 
 def _list(values):
     """
@@ -474,7 +475,11 @@ def df_concat(objs, columns = None, axis=1, join = 'outer'):
         columns = list(objs.keys())
         objs = list(objs.values())
     if isinstance(objs, list):
-        res = pd.concat(objs, axis = axis, join = join)
+        df_objs = [o for o in objs if is_pd(o)]
+        res = pd.concat(df_objs, axis = axis, join = join)
+        if len(df_objs) < len(objs):
+            df_objs = [o if is_pd(o) else pd.Series(o, res.index) for o in objs]
+            res = pd.concat(df_objs, axis = axis, join = join)            
     elif isinstance(objs, pd.DataFrame):
         res = objs.copy() if columns is not None else objs
     if columns is not None:
@@ -833,19 +838,6 @@ class presync(wrapper):
             converted = _convert(res, columns)
             return converted 
 
-@presync
-def _add_(a, b):
-    """
-    addition of a and b supporting presynching (inner join) of timeseries
-    """
-    return a+b
-
-@presync
-def _mul_(a, b):
-    """
-    multiplication of a and b supporting presynching (inner join) of timeseries
-    """
-    return a*b
 
 @presync
 def _div_(a, b):
@@ -862,6 +854,20 @@ def _sub_(a, b):
     return a-b
 
 @presync
+def _add_(a, b):
+    """
+    addition of a and b supporting presynching (inner join) of timeseries
+    """
+    return a + b
+
+@presync
+def _mul_(a, b):
+    """
+    multiplication of b and a supporting presynching (inner join) of timeseries
+    """
+    return a * b
+
+@presync
 def _pow_(a, b):
     """
     equivalent to a**b supporting presynching (inner join) of timeseries
@@ -869,7 +875,7 @@ def _pow_(a, b):
     return a**b
 
 
-def add_(a, b, join = 'ij', method = None, columns = 'ij'):
+def add_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     a = pd.Series([1,2,3], drange(-2))
     b = pd.Series([1,2,3], drange(-3,-1))
@@ -877,33 +883,62 @@ def add_(a, b, join = 'ij', method = None, columns = 'ij'):
     
     addition of a and b supporting presynching (inner join) of timeseries
     """
-    return _add_(a,b, join = join, method = method, columns = columns)
+    dfs = as_list(a) + as_list(b)
+    f = lambda a, b: _add_(a, b, join = join, method = method, columns = columns)
+    return reducer(f, dfs)
+    
 
-def mul_(a, b, join = 'ij', method = None, columns = 'ij'):
+def mul_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     multiplication of a and b supporting presynching (inner join) of timeseries
     mul_(a,b,join = 'oj', method = 'ffill')
     cell(mul_, a = a, b = b, join = 'oj')()
     """
-    return _mul_(a,b, join = join, method = method, columns = columns)
+    dfs = as_list(a) + as_list(b)
+    f = lambda a, b: _mul_(a, b, join = join, method = method, columns = columns)
+    return reducer(f, dfs)
 
 def div_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     division of a by b supporting presynching (inner join) of timeseries
     """
-    return _div_(a,b, join = join, method = method, columns = columns)
+    if isinstance(a, list):
+        a = mul_(a, join = join, method = method, columns = columns)
+    if isinstance(b, list):
+        b = mul_(b, join = join, method = method, columns = columns)
+    return _div_(a, b, join = join, method = method, columns = columns)
 
 def sub_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     subtraction of b from a supporting presynching (inner join) of timeseries
     """
-    return _sub_(a,b, join = join, method = method, columns = columns)
+    if isinstance(a, list):
+        a = add_(a, join = join, method = method, columns = columns)
+    if isinstance(b, list):
+        b = add_(b, join = join, method = method, columns = columns)
+    return _sub_(a, b, join = join, method = method, columns = columns)
 
 def pow_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     equivalent to a**b supporting presynching (inner join) of timeseries
     """
     return _pow_(a,b, join = join, method = method, columns = columns)
+
+def min_(a, b = None, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to redced np.minimum operation supporting presynching of timeseries
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)    
+    return reducer(np.minimum, dfs)
+
+def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to redced np.minimum operation supporting presynching of timeseries
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)    
+    return reducer(np.maximum, dfs)
 
 
 def _closed(oc):

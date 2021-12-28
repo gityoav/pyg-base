@@ -103,10 +103,19 @@ def test_bi():
         assert f(a,b, 'oj').shape == (4,1)
         assert f(a,b, 'oj', 0, 'oj').shape == (4,3)
 
+    for f in [add_,mul_]: # support for list of values
+        for x in [s,a,b,c]:
+            for y in [s, a, b, c]:
+                assert eq(f([x,y]), f(x,y))
+    
+    assert add_([a,b,c,s], columns = 'oj').shape == (2,3)
+    assert mul_([a,b,c,s], columns = 'oj').shape == (2,3)
+
     # operations with a constant
     for f,o in zip([add_,sub_,div_,mul_,pow_], [add, sub, itruediv,mul, pow]):
         for v in [a,b,s,c]:
             assert eq(f(v,c), o(v,c))
+
 
     
     
