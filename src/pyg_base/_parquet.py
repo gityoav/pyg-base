@@ -3,7 +3,6 @@ from pyg_base._types import is_series, is_df, is_int, is_date, is_bool, is_str, 
 from pyg_base._dates import dt2str, dt
 from pyg_base._logger import logger
 from pyg_base._as_list import as_list
-from npy_append_array import NpyAppendArray as npa
 import pandas as pd
 import numpy as np
 import jsonpickle as jp
@@ -17,6 +16,7 @@ __all__ = ['pd_to_parquet', 'pd_read_parquet', 'pd_to_npy', 'pd_read_npy', 'np_s
 def np_save(path, value, append = False):
     mkdir(path)
     if append:
+        from npy_append_array import NpyAppendArray as npa
         with npa(path) as f:
             f.append(value)
     else:

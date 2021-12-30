@@ -937,7 +937,7 @@ def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     equivalent to redced np.minimum operation supporting presynching of timeseries
     """
     dfs = as_list(a) + as_list(b)
-    dfs = df_sync(dfs, join = join, method = method, columns = columns)    
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
     return reducer(np.maximum, dfs)
 
 
