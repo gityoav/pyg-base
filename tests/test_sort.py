@@ -24,6 +24,7 @@ def test_cmp():
     assert sorted(unsorted) == sorted(unsorted, key = Cmp)
 
     assert cmp('2', 2) == 1
+    assert cmp(2.0, 2) == 0
     assert cmp(np.int64(2), 2) == 0
     assert cmp(None, 2.0) == -1 # None is smallest
     assert cmp([1,2,3], [4,5]) == 1 # [1,2,3] is longer
@@ -39,8 +40,7 @@ def test_cmp():
     assert Cmp(dict(a = 1, b = 2))< dict(a = 1, c = 2)
 
     assert Cmp([1,2,3,4, np.nan]) > [1,2,3,4]
-    assert Cmp(np.nan)<1
-
+    assert (Cmp(np.nan)<1) == (Cmp(np.nan)<1.0)
 
 def test_sort():
     t =  datetime.datetime(2021, 2, 20, 22, 38, 12)

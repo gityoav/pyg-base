@@ -49,6 +49,8 @@ def cmp(x,y):
     if x is y:
         return 0
     x,y = as_primitive([x,y])
+    x = float(x) if isinstance(x, int) and not isinstance(x, bool) else x
+    y = float(y) if isinstance(y, int) and not isinstance(y, bool) else y
     tx = str(type(x))
     ty = str(type(y))
     if tx<ty:

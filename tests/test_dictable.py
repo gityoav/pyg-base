@@ -72,7 +72,12 @@ def test_dictable_get():
     assert d.get('c') == [None, None, None]
     assert d.get('c', 0) == [0,0,0]
     
-    
+
+def test_dictable_join_with_int_and_floats():
+    a = dictable(a = [1,2,3, np.nan])
+    b = dictable(a = [1.0, 2.0, 3.0, 4., np.nan])
+
+    assert len(a*b) == 4 and (a*b == a)
 
 # def test_dictable_init_from_cursor():
 #     t = mongo_table('test', 'test')
