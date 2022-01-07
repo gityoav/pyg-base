@@ -157,9 +157,6 @@ def topological_sort(dag, node):
     return dict(gen2node = gen2node, node2gen = node2gen)
  
 
-    
-
-
 def descendants(dag, node, exc = None):
     """
     returns the descendants of the node (with node itself as first element) sorted topologically

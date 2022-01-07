@@ -1,6 +1,6 @@
 import numpy as np
 from pyg_base._logger import logger
-from pyg_base._inspect import getargspec, getargs, getcallargs
+from pyg_base._inspect import getargspec, getargs
 from pyg_base._dictattr import dictattr
 from copy import copy
 import datetime

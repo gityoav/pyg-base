@@ -37,7 +37,6 @@ class dictattr(dict):
     >>> d = dictattr(a = 1, b = 2) + dict(b = 'replacing old value', c = 'new key')
     >>> assert d == dictattr(a = 1, b = 'replacing old value', c = 'new key')
 
-        
     '''
     def __sub__(self, key, copy = True):
         """

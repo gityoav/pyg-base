@@ -48,6 +48,18 @@ def test_dt_utc():
         assert dt(timestamp) == t
 
 
+def test_uk2dt():
+    assert uk2dt('2001-jan') == dt(2001,1,1)
+    assert uk2dt('2001-january') == dt(2001,1,1)
+    assert uk2dt('2001-01') == dt(2001,1,1)
+    assert uk2dt('2001-10') == dt(2001,10,1)
+    assert us2dt('2001-mar') == dt(2001,3,1)
+    assert us2dt('2001-march') == dt(2001,3,1)
+    assert us2dt('2001-3') == dt(2001,3,1)
+    with pytest.raises(Exception):
+        uk2dt('2001-13')
+    
+
 def test_nth_weekday_of_month():
     y = 2020; m = 2
     assert nth_weekday_of_month(y, m, 1, 'sat') == dt(2020, 2, 1)

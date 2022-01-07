@@ -3,4 +3,4 @@ scipy
 pandas
 jsonpickle
 fastparquet
-npy-append-array
+pyg-npy

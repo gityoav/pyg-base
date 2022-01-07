@@ -13,7 +13,7 @@ from pyg_base._dictable import dictable, dict_concat, is_dictable
 from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time
 from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive
 from pyg_base._eq import eq, in_
-from pyg_base._file import path_name, path_dirname, path_join, mkdir, read_csv
+from pyg_base._file import read_csv
 from pyg_base._getitem import getitem, callitem, callattr
 from pyg_base._inspect import getargspec, getargs, getcallargs, call_with_callargs, argspec_defaults, argspec_required, argspec_update, argspec_add, kwargs2args
 from pyg_base._logger import logger, get_logger
@@ -21,7 +21,7 @@ from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all
 from pyg_base._named_dict import named_dict
 from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_concat, df_fillna, presync, df_sync, \
     add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_
-from pyg_base._parquet import pd_to_parquet, pd_read_parquet, pd_to_npy, pd_read_npy, np_save
+from pyg_base._parquet import pd_to_parquet, pd_read_parquet
 from pyg_base._perdictable import join, perdictable
 from pyg_base._reducer import reducer, reducing
 from pyg_base._sort import sort, cmp, Cmp
@@ -35,4 +35,5 @@ from pyg_base._types import is_pd, is_arr, is_int, is_float, is_num, is_bool, is
 from pyg_base._ulist import ulist, rng
 from pyg_base._waiter import waiter, async_wrapper
 from pyg_base._zip import zipper, lens
+from pyg_npy import np_save, pd_to_npy, pd_read_npy, path_name, path_dirname, path_join, mkdir
 
