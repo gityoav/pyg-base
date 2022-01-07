@@ -5,6 +5,7 @@ import re
 import pandas as pd
 import numpy as np
 from dateutil import parser
+# from dateutil.relativedelta import relativedelta
 from functools import reduce, partial
 import dateutil as du
 
@@ -17,8 +18,6 @@ iso = re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
 ambiguity = re.compile('^[0-9]{2}[-/ .][0-9]{2}[-/ .][0-9]{4}')
 futcodes = list('fghjkmnquvxz'.upper())
 months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
-yyyymm = re.compile('^[0-9]{4}[-/ .][0-9]{1,2}$')
-yyyymmm = re.compile('^[0-9]{4}[-/ .](%s)'%('|'.join(months)), re.IGNORECASE)
 wkdays = dict(mon = 0, tue = 1, wed = 2, thu = 3, fri = 4, sat = 5, sun = 6)
 period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]$')
 
@@ -189,15 +188,13 @@ def uk2dt(t):
     if t in ('', 'null'):
         return None
     amb = ambiguity.search(t)
-    if amb is not None:
+    if amb is None:
+        return parser.parse(t)
+    else:
         res = parser.parse(t[3:5] + t[2] + t[:2]  + t[5:])
         if res.day != int(t[:2]):
             raise ValueError('the date is not in UK format')
         return res
-    res = parser.parse(t)
-    if yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
-        res = datetime.datetime(res.year, res.month, 1)
-    return res
 
 def us2dt(t):
     if t in ('', 'null'):
@@ -206,8 +203,6 @@ def us2dt(t):
     amb = ambiguity.search(t)
     if amb is not None and res.month != int(t[:2]):
         raise ValueError('the date is not in US format')
-    if yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
-        res = datetime.datetime(res.year, res.month, 1)
     return res
 
 def none2dt(none = datetime.datetime.now):
@@ -494,4 +489,3 @@ def dt2str(t, fmt = None):
         return t.strftime(fmt)
 
     
-
