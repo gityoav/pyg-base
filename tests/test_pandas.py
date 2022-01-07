@@ -11,8 +11,8 @@ def test_df_slice():
 
 
     df = pd.Series(np.random.normal(0,1,1000), drange(-999, 2020))
-    jan1 = drange(2018, None, '1y')
-    feb1 = drange(dt(2018,2,1), None, '1y')
+    jan1 = drange(2018, dt(2021,11,1), '1y')
+    feb1 = drange(dt(2018,2,1), dt(2021,11,1), '1y')
     res = df_slice(df, jan1, feb1, openclose = '[)')
     assert set(res.index.month) == {1}
 

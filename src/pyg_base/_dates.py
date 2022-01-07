@@ -15,9 +15,11 @@ TMAX = datetime.datetime(2300,1,1)
 microsecond = datetime.timedelta(microseconds = 1)
 DAY = datetime.timedelta(days = 1)
 iso = re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
-ambiguity = re.compile('^[0-9]{2}[-/ .][0-9]{2}[-/ .][0-9]{4}')
+ambiguity = re.compile('^[0-9]{1,2}[-/ .][0-9]{1,2}[-/ .][0-9]{4}')
 futcodes = list('fghjkmnquvxz'.upper())
 months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+yyyymm = re.compile('^[0-9]{4}[-/ .][0-9]{1,2}$')
+yyyymmm = re.compile('^[0-9]{4}[-/ .](%s)[a-z]*$'%('|'.join(months)), re.IGNORECASE)
 wkdays = dict(mon = 0, tue = 1, wed = 2, thu = 3, fri = 4, sat = 5, sun = 6)
 period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]$')
 
@@ -110,6 +112,8 @@ def _ymd(y,m,d):
         calculates dates.
 
     """
+    if d>1500 and d<3000 and y>0 and y<32 and m>0 and m<13:
+        y,d = d,y
     y,m = ym(y,m)
     d = int(d) if is_float(d) and int(d) == d else d
     return datetime.datetime(y,m,1) + (d-1) * DAY
@@ -187,22 +191,25 @@ def np2dt(t):
 def uk2dt(t):
     if t in ('', 'null'):
         return None
-    amb = ambiguity.search(t)
-    if amb is None:
-        return parser.parse(t)
-    else:
-        res = parser.parse(t[3:5] + t[2] + t[:2]  + t[5:])
-        if res.day != int(t[:2]):
-            raise ValueError('the date is not in UK format')
-        return res
+    res = parser.parse(t)
+    if ambiguity.search(t) is not None:
+        if res.day<13:
+            res = dt(res.year, res.day, res.month, res.hour, res.minute, res.second, res.microsecond)
+        elif int(t[:2].replace('-','').replace('/',''))!=res.day:
+            raise ValueError('date %s is not in UK date format'%t)
+    elif yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
+        res = datetime.datetime(res.year, res.month, 1)
+    return res
+
 
 def us2dt(t):
     if t in ('', 'null'):
         return None
     res = parser.parse(t)
-    amb = ambiguity.search(t)
-    if amb is not None and res.month != int(t[:2]):
+    if ambiguity.search(t) is not None and res.month != int(t[:2].replace('-','').replace('/','')):
         raise ValueError('the date is not in US format')
+    if yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
+        res = datetime.datetime(res.year, res.month, 1)
     return res
 
 def none2dt(none = datetime.datetime.now):

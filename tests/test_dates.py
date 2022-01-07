@@ -59,6 +59,7 @@ def test_uk2dt():
     with pytest.raises(Exception):
         uk2dt('2001-13')
     
+    assert dt('1/7/2007') == dt('01/07/2007')
 
 def test_nth_weekday_of_month():
     y = 2020; m = 2
