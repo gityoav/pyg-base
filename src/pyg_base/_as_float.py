@@ -7,7 +7,7 @@ _n = {v: 10**k for k,v in _k.items()}
 __all__ = ['as_float']
 
 @loop(list, tuple, dict)
-def as_float(value):
+def _as_float(value):
     """
     converts a string to float
 
@@ -39,9 +39,34 @@ def as_float(value):
         else:
             mult = 1
         try:
-            return mult * float(txt)
+            res = mult * float(txt)
+            res = round(res, len(txt)+2)
+            return res
         except ValueError:
             return None
     else:
         return value
 
+def as_float(value):
+    """
+    converts a string to float allowing for commas, percentages etc.
+
+    :Parameters:
+    ----------
+    value : string
+        number in string format.
+
+    :Returns:
+    -------
+    float
+
+    :Example:
+    --------
+    >>> from pyg import *
+    >>> assert as_float('1.3k') == 1300
+    >>> assert as_float('1.4m') == 1400000
+    >>> assert as_float('100%') == 1
+    >>> assert as_float('1,234') == 1234
+    >>> assert as_float('-1,234k') == -1234000
+    """
+    return _as_float(value)
