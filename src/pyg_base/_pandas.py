@@ -474,7 +474,7 @@ def df_concat(objs, columns = None, axis=1, join = 'outer'):
     if isinstance(objs, dict):
         columns = list(objs.keys())
         objs = list(objs.values())
-    if isinstance(objs, list):
+    if isinstance(objs, (list, tuple)):
         df_objs = [o for o in objs if is_pd(o)]
         res = pd.concat(df_objs, axis = axis, join = join)
         if len(df_objs) < len(objs):
