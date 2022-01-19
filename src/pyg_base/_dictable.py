@@ -1,11 +1,14 @@
 from _collections_abc import dict_keys, dict_values
 from pyg_base._as_list import as_list, as_tuple
+from pyg_base._as_float import as_float
 from pyg_base._dict import Dict
 from pyg_base._zip import zipper, lens
 from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan
+from pyg_base._txt import lower
 from pyg_base._tree import is_tree, tree_to_table
 from pyg_base._inspect import getargs
-from pyg_base._decorators import kwargs_support, try_none
+from pyg_base._decorators import kwargs_support, try_none, try_back
+from pyg_base._dates import ndt
 from pyg_base._sort import sort, cmp
 from pyg_base._encode import _encode, _obj
 from pyg_base._file import read_csv
@@ -14,6 +17,10 @@ import pandas as pd
 import re
 
 __all__ = ['dict_concat', 'dictable', 'is_dictable']
+
+
+def nan2none(v):
+    return None if is_nan(v) or (is_str(v) and (len(v.strip()) == 0 or v[0] == '#' or v == 'n/a')) else v
 
 
 def dict_concat(*dicts):
@@ -93,7 +100,10 @@ def _data_columns_as_dict(data, columns = None):
         return dict_concat(tree_to_table(data, columns)) if is_tree(columns) else dict(data)
     if columns is not None:
         if is_str(columns):
-            return {columns : data}
+            if (is_str(data) and '.xls' in data) or isinstance(data, pd.io.excel.ExcelFile):
+                return dict(dictable.read_excel(data, columns))
+            else:
+                return {columns : data}
         else:
             return dict(zipper(columns, zipper(*data)))
     else:
@@ -101,7 +111,7 @@ def _data_columns_as_dict(data, columns = None):
             if data.endswith('.csv'):
                 data = read_csv(data)
             elif 'xls' in data:
-                data = pd.ExcelFile(data).parse()
+                data = dict(dictable.read_excel(data))
             else:
                 return dict(data = data)
         if is_df(data):
@@ -253,7 +263,7 @@ class dictable(Dict):
         kwargs = {key :_value(value) for key, value in kwargs.items()}
         data_kwargs = {key: _value(value) for key, value in _data_columns_as_dict(data, columns).items()}
         kwargs.update(data_kwargs)
-        if is_strs(columns) and not is_tree(columns):
+        if is_strs(columns) and not is_tree(columns) and not is_str(columns):
             kwargs = {key : kwargs.get(key, [None]) for key in columns} if len(kwargs)>0 else {key : [] for key in columns}
         n = lens(*kwargs.values())
         kwargs = {str(key) if is_int(key) else key : value * n if len(value)==1 else value for key, value in kwargs.items()}
@@ -693,6 +703,32 @@ class dictable(Dict):
         rtn = dictable(xs, by)
         rtn.update({k: [[self[k][i] for i in y] for y in ids] for k in self.keys() if k not in by})
         return rtn
+    
+    @classmethod
+    def read_excel(cls, io, sheet_name = None, floats = None, ints = None, dates = None, no_none = None):
+        if is_str(io):
+            io = io.lower()
+            if '!' in io and sheet_name is None: ## handling input like: ExcelFile.xlsx!SheetName
+                io, sheet_name = io.split('!')
+            if not '.xls' in io:
+                io = io + '.xlsx'
+            io = pd.ExcelFile(io)
+        if sheet_name is None:
+            sheet_name = 0
+        df = io.parse(sheet_name)
+        res = cls(df)
+        res = res.relabel(lambda v: v.strip().replace(' ', '_'))
+        res = res.do(nan2none)
+        if floats:
+            res = res.do(try_back(as_float), floats)
+        if ints:
+            res = res.do(try_back(int), ints)
+        if dates:
+            res = res.do(try_back(ndt), dates)
+        if no_none:
+            for col in as_list(no_none):
+                res = res.exc(**{col : None})
+        return res
     
     def unlist(self):
         """
