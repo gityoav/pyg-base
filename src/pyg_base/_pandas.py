@@ -24,7 +24,6 @@ import numpy as np
 from copy import copy
 import inspect
 import datetime
-from operator import add, mul
 
 
 __all__ = ['df_fillna', 'df_index', 'df_reindex', 'df_columns', 'presync', 'np_reindex', 'nona', 'df_slice', 'df_unslice', 'min_', 'max_', 'add_', 'mul_', 'sub_', 'div_', 'pow_']
@@ -1137,3 +1136,4 @@ def df_unslice(df, ub):
     res = res(rs = lambda i, ts: dictable(u = ub[i: i+n], j = range(len(ub[i: i+n])))(ts = lambda j: ts[j]))
     rs = dictable.concat(res.rs).listby('u').do([pd.concat, nona], 'ts')
     return dict(rs['u', 'ts'])
+
