@@ -61,20 +61,18 @@ def _cell_item(value, key = None, key_before_data = False):
                 except KeyError:
                     return tree_getitem(value, key)
     else:
+        if not key_before_data:
+            if _data == output[0]:
+                return value[_data]
         if key is not None:
             try:
                 return tree_getitem(value, key)
             except Exception:
-                if _data == output[0]:
-                    return value[_data]
-                else:
-                    return Dict(value)[output]
-        else:
-            if _data == output[0]:
-                return value[_data]
-            else:            
-                return Dict(value)[output]
-            
+                pass
+        if _data == output[0]:
+            return value[_data]
+        else:            
+            return Dict(value)[output]
         
 
 def cell_clear(value):
@@ -112,7 +110,7 @@ def cell_clear(value):
         return value
 
 
-def cell_item(value, key = None):
+def cell_item(value, key = None, key_before_data = False):
     """
     returns an item from a cell (if not cell, returns back the value).
     If no key is provided, will return the output of the cell
@@ -125,6 +123,11 @@ def cell_item(value, key = None):
         The key within cell we are interested in. Note that key is treated as GUIDANCE only. 
         Our strong preference is to return valid output from cell_output(cell)
 
+    key_before_data: bool
+        We usually give preference to reserved keyword 'data' when we grab a cell, even if a key is provided
+        So if a cell contains both the data and the key, we will return cell[data] by default
+        Set key_before_data = True to search for key values first
+        
     :Example: non cells
     ---------------------------------
     >>> assert cell_item(1) == 1
@@ -137,7 +140,7 @@ def cell_item(value, key = None):
     >>> assert cell_item(c.go()) == 3
 
     """
-    return _cell_item(value, key = key)
+    return _cell_item(value, key = key, key_before_data = key_before_data)
 
 @loop(list, tuple)
 def _cell_go(value, go, mode = 0):
@@ -423,9 +426,12 @@ class cell(dictattr):
         >>> assert c.data == 2 and not c.run()
         """
         output = cell_output(self)
-        for o in output:
-            if self.get(o) is None:
-                return True
+        if _data in output:
+            return self.get(_data) is None
+        else:
+            for o in output:
+                if self.get(o) is None:
+                    return True
         return False
     
     def save(self):

@@ -4,7 +4,6 @@ from pyg_base._as_float import as_float
 from pyg_base._dict import Dict
 from pyg_base._zip import zipper, lens
 from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan
-from pyg_base._txt import lower
 from pyg_base._tree import is_tree, tree_to_table
 from pyg_base._inspect import getargs
 from pyg_base._decorators import kwargs_support, try_none, try_back
@@ -263,7 +262,7 @@ class dictable(Dict):
         kwargs = {key :_value(value) for key, value in kwargs.items()}
         data_kwargs = {key: _value(value) for key, value in _data_columns_as_dict(data, columns).items()}
         kwargs.update(data_kwargs)
-        if is_strs(columns) and not is_tree(columns) and not is_str(columns):
+        if is_strs(columns) and (len(data_kwargs) == 0 or not is_str(columns)):
             kwargs = {key : kwargs.get(key, [None]) for key in columns} if len(kwargs)>0 else {key : [] for key in columns}
         n = lens(*kwargs.values())
         kwargs = {str(key) if is_int(key) else key : value * n if len(value)==1 else value for key, value in kwargs.items()}

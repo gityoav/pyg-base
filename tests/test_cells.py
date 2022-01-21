@@ -114,7 +114,8 @@ def test_cell_item():
     d.output = ['data', 'a']
     assert cell_item(d, 'crap') == 2
     assert cell_item(d) == 2
-    assert cell_item(d, 'a') == 1
+    assert cell_item(d, 'a',  True) == d['a']
+    assert cell_item(d, 'a',  False) == d['data']
     
     
 def test_cell_init():
