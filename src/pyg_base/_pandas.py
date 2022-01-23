@@ -874,6 +874,37 @@ def _pow_(a, b):
     return a**b
 
 
+@presync
+def _gt_(a, b):
+    """
+    comparison of a and b supporting presynching (inner join) of timeseries
+    """
+    return a > b
+
+@presync
+def _ge_(a, b):
+    """
+    comparison of a and b supporting presynching (inner join) of timeseries
+    """
+    return a >= b
+
+
+@presync
+def _lt_(a, b):
+    """
+    comparison of a and b supporting presynching (inner join) of timeseries
+    """
+    return a < b
+
+@presync
+def _le_(a, b):
+    """
+    comparison of a and b supporting presynching (inner join) of timeseries
+    """
+    return a <= b
+
+
+
 def add_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     a = pd.Series([1,2,3], drange(-2))
@@ -922,6 +953,30 @@ def pow_(a, b, join = 'ij', method = None, columns = 'ij'):
     equivalent to a**b supporting presynching (inner join) of timeseries
     """
     return _pow_(a,b, join = join, method = method, columns = columns)
+
+def gt_(a, b, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to a>b supporting presynching (inner join) of timeseries
+    """
+    return _gt_(a,b, join = join, method = method, columns = columns)
+
+def ge_(a, b, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to a>=b supporting presynching (inner join) of timeseries
+    """
+    return _ge_(a,b, join = join, method = method, columns = columns)
+
+def lt_(a, b, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to a<b supporting presynching (inner join) of timeseries
+    """
+    return _lt_(a,b, join = join, method = method, columns = columns)
+
+def le_(a, b, join = 'ij', method = None, columns = 'ij'):
+    """
+    equivalent to a<=b supporting presynching (inner join) of timeseries
+    """
+    return _le_(a,b, join = join, method = method, columns = columns)
 
 def min_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
