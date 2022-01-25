@@ -469,19 +469,40 @@ def df_concat(objs, columns = None, axis=1, join = 'outer'):
     >>> 5  2.0  NaN
     >>> 6  3.0  NaN    
 
+    :Example: numpy arrays concatenation
+    -----------------------
+    >>> objs = [np.array([1,2,3]), np.array([4,5,6]), 3, 4]
+    >>> df_concat(objs)
+
     """
     if isinstance(objs, dict):
         columns = list(objs.keys())
         objs = list(objs.values())
     if isinstance(objs, (list, tuple)):
         df_objs = [o for o in objs if is_pd(o)]
-        res = pd.concat(df_objs, axis = axis, join = join)
-        if len(df_objs) < len(objs):
-            df_objs = [o if is_pd(o) else pd.Series(o, res.index) for o in objs]
-            res = pd.concat(df_objs, axis = axis, join = join)            
+        np_objs = [o for o in objs if is_arr(o)]
+        if len(df_objs):
+            res = pd.concat(df_objs, axis = axis, join = join)
+            if len(df_objs) < len(objs):
+                df_objs = [o if is_pd(o) else pd.Series(o, res.index) for o in objs]
+                res = pd.concat(df_objs, axis = axis, join = join)
+        elif len(np_objs):
+            ns = set([o.shape[0] for o in np_objs])
+            if len(ns) == 1:
+                n = list(ns)[0]
+            else:
+                raise ValueError('numpy arrays must be of equal length, other joins not implemented')
+            np_objs = [(o[:, np.newaxis] if len(o.shape)==1 else o) if is_arr(o) else np.full((n,1), o) for o in objs]
+            res = np.concatenate(np_objs, axis = axis)
+        else:
+            return objs
     elif isinstance(objs, pd.DataFrame):
         res = objs.copy() if columns is not None else objs
-    if columns is not None:
+    elif is_arr(objs):
+        res = objs.copy()
+    else:
+        raise ValueError('not sure how to convert this into a single dataframe')
+    if columns is not None and is_df(res):
         if isinstance(columns, list):
             res.columns = columns 
         else:
