@@ -503,6 +503,62 @@ class dictable(Dict):
             return type(self)([], self.keys())
         return res                
 
+
+    def if_none(self, none = None, **kwargs):
+        """
+        runs a column calculation if a column is not there, or if the existing value is considered missing.
+        
+        Example:
+        --------
+        >>> rs = dictable(a = [1,'hello'])
+        >>> rs = rs(b = try_none(lambda a: a[0]))  ## fails for numerical value
+        >>> rs
+
+        >>> dictable[2 x 2]
+        >>> a    |b   
+        >>> 1    |None
+        >>> hello|h   
+        
+        what shall we do with integer values for which b is None?
+        
+        >>> rs = rs.if_none(b = lambda a: a+3)
+        >>> rs
+        >>> dictable[2 x 2]
+        >>> a    |b   
+        >>> 1    |4
+        >>> hello|h   
+
+
+        Example:
+        -------- 
+        >>> rs = dictable(a = range(3))
+        >>> rs = rs(b = try_nan(lambda a: 10/a))
+        >>> rs = rs.if_none(np.nan, b = 'sorry no can do')
+
+        >>> dictable[3 x 2]
+        >>> a|b              
+        >>> 0|sorry no can do
+        >>> 1|10.0           
+        >>> 2|5.0        
+        
+        """
+        if none is None:
+            check = lambda value: value is None
+        elif not callable(none):
+            check = lambda value: value in as_list(none)
+        else:
+            check = none
+        res = self
+        for key, value in kwargs.items():
+            if key not in res.keys():
+                res[key] = res[value]
+            else:
+                if callable(value):
+                    res[key] = [row[key] if not check(row[key]) else row[value] for row in res]
+                else:
+                    res[key] = [row[key] if not check(row[key]) else value for row in res]                    
+        return res
+
     
     def apply(self, function):
         f = kwargs_support(function)
