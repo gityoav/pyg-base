@@ -44,6 +44,21 @@ def test_dictable_init():
     assert dict(dictable(data = [1,2,3])) == dict(data = [1,2,3])
 
 
+def test_dictable_if_none():
+    rs = dictable(a = [1,2,None])
+    rs = rs.if_none(a = 3)    
+    assert rs == dictable(a = [1,2,3])
+    
+    rs = rs.if_none(1, a = 4)    
+    assert rs == dictable(a = [4,2,3])
+
+    rs = rs.if_none(4, a = lambda a: a**2)
+    assert rs == dictable(a = [16,2,3])
+
+    rs = dictable(a = [1,2,3,4], b = [0, None, None, None])    
+    rs = rs.if_none(b = lambda a: a**2)
+    assert rs == dictable(a = [1,2,3,4], b = [0,4,9,16])
+
 def test_dictable_init_with_columns():
     assert dict(dictable(columns = 'a')) == dict(a = [])
     assert dict(dictable(columns = ['a', 'b'])) == dict(a = [], b = [])
