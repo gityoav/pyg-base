@@ -11,7 +11,7 @@ We then need to worry about multiple columns if there are. If none, each timeser
 If there are multiple columns, we will perform the calculations columns by columns. 
 
 """
-from pyg_base._types import is_df, is_str, is_num, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd
+from pyg_base._types import is_df, is_str, is_num, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
@@ -170,6 +170,18 @@ def _df_fillna(df, method = None, axis = 0, limit = None):
             res = res.fillna(value = m, axis = axis, limit = limit)
         elif m in ['backfill', 'bfill', 'pad', 'ffill']:
             res = res.fillna(method = m, axis = axis, limit = limit)
+        elif m in ['ffill_na', 'ffill_0']: # forward fill but only up to the end of a timeseries    
+            invalid = np.nan if m == 'ffill_na' else 0.
+            if len(df.shape) == 1:
+                last_valid = df.last_valid_index()
+                if last_valid is not None:    
+                    res = res.fillna(method = 'ffill', axis = axis, limit = limit)
+                    res[res.index>last_valid] = invalid
+            else:
+                res = pd.concat([_df_fillna(res.iloc[:, i], method, axis, limit) for i in range(res.shape[1])], axis=1)
+        elif is_date(m):
+            res = res.fillna(method = 'ffill', axis = axis, limit = limit)
+            res[res.index>m] = np.nan
         elif m in ('fnna', 'nona'):
             nonan = ~np.isnan(res)
             if len(res.shape)==2:
@@ -208,6 +220,8 @@ def df_fillna(df, method = None, axis = 0, limit = None):
         Or an interplation method: 'linear', 'time', 'index', 'values', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'barycentric', 'krogh', 'spline', 'polynomial', 'from_derivatives', 'piecewise_polynomial', 'pchip', 'akima', 'cubicspline'
         Or 'fnna': removes all to the first non nan
         Or 'nona': removes all nans
+        Or 'ffill_na': forward fills all the way to last valid index and then stops
+        Or 'ffill_0': forward fills all the way to last valid index and then fills with zero [Think about a position in an option that expires]
     axis : int, optional
         axis. The default is 0.
     limit : TYPE, optional

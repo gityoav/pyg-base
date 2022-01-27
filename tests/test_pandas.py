@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
-from pyg_base import df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_
+from pyg_base import df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex
 from operator import add, itruediv, sub, mul, pow
 
 def test_df_slice():
@@ -116,6 +116,20 @@ def test_bi():
         for v in [a,b,s,c]:
             assert eq(f(v,c), o(v,c))
 
+
+def test_df_fillna():
+    from numpy import nan
+    dates =  drange(dt(2000), dt(2000,1,14))
+    df = pd.Series([0,nan, 1, nan, nan, 2, nan, nan, nan, 3, nan, nan, nan, nan, ], dates)
+    df0 = df.copy()
+    df0[np.isnan(df)] = 0
+    assert eq(df_fillna(df), df)
+    assert eq(df_fillna(df, 0), df0)
+    assert eq(df_fillna(df, 'ffill_na'), pd.Series([0,0, 1, 1,1, 2, 2,2,2,3, nan, nan, nan, nan, ], dates))
+    assert eq(df_fillna(df, 'ffill_0'), pd.Series([0,0, 1, 1,1, 2, 2,2,2,3] + [0] * 4, dates))
+    assert eq(df_fillna(df, 'bfill'), pd.Series([0,1, 1, 2, 2, 2, 3, 3, 3, 3, nan, nan, nan, nan, ], dates))
+    assert eq(df_fillna(df, 'linear'), pd.Series([0,.5, 1, 1+1/3, 1+2/3, 2, 2.25, 2.5, 2.75] + [3]*5, dates))
+    
 
     
     

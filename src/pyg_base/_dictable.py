@@ -901,6 +901,8 @@ class dictable(Dict):
         lcols = as_tuple(lcols); rcols = as_tuple(rcols)
         if len(lcols)!=len(rcols):
             raise ValueError('cannot inner join when cols on either side mismatch in length %s vs %s'%(lcols, rcols))
+        else:
+            print('inner joining on %s'%list(lcols))
         cols = []
         for lcol, rcol in zip(lcols, rcols):
             if is_str(lcol):
