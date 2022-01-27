@@ -729,8 +729,7 @@ class cell(dictattr):
         return copy(self)
 
     def __repr__(self):
-        return '%s\n%s'%(self.__class__.__name__,tree_repr(dict(self)))
-
+        return '%s\n%s'%(self.__class__.__name__,tree_repr({k : cell_clear(v) for k, v in self.items()}))
 
     def pull(self):
         """

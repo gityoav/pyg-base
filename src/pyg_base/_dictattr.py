@@ -1,4 +1,5 @@
 from pyg_base._as_list import as_list, is_rng
+from pyg_base._eq import eq
 from pyg_base._types import is_str
 from pyg_base._ulist import ulist
 
@@ -114,6 +115,14 @@ class dictattr(dict):
         res = self.copy()
         res.update(other)
         return res
+    
+    def __truediv__(self, other):
+        if type(other) == type:
+            return type(self)({key: value for key, value in self.items() if not isinstance(value, other)})                        
+        elif callable(other):
+            return type(self)({key: value for key, value in self.items() if not other(value)})            
+        else:
+            return type(self)({key: value for key, value in self.items() if not eq(value, other)})
     
     def __dir__(self):
         return list(self.keys()) + super(dictattr, self).__dir__()
