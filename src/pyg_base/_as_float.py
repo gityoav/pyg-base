@@ -3,6 +3,7 @@ from pyg_base._types import is_str, is_num
 
 _k = {0 : '', 3 : 'k', 6:'m', 9:'b', 12: 't', -2 : '%'}
 _n = {v: 10**k for k,v in _k.items()}
+_n.update({v.upper(): 10**k for k,v in _k.items()})
 
 __all__ = ['as_float']
 
@@ -43,7 +44,7 @@ def _as_float(value):
             res = round(res, len(txt)+2)
             return res
         except ValueError:
-            return None
+            return value
     else:
         return value
 

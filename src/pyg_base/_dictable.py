@@ -63,6 +63,11 @@ def dict_concat(*dicts):
     
 
 def _text_box(value, max_rows = 5, max_chars = 50):
+    """
+    a = dictable(a = range(10)) * dict(b = range(10))
+    b = (dictable(a = range(5)) * dict(b = range(5))) * dict(c = range(10))
+    self = c = dictable(key = ['a', 'b'] * 5, rs = [a,b]*5)
+    """
     v = str(value)
     res = v.split('\n')
     if max_rows:
@@ -646,13 +651,20 @@ class dictable(Dict):
         return self.to_string(cat = max_rows, mid = '...%i rows...'%len(self), max_width=max_width)
     
     def to_string(self, colsep = '|', rowsep = '', cat = None, max_rows = 5, max_width = None, mid = '...', header = None, footer = None):
+        """
+        convrts dictable to string
+        :Example:
+        ---------
+        >>> colsep = '|'; rowsep = ''; cat = None; max_rows = 5; max_width = None; mid = '...'; header = None; footer = None
+        
+        """
         if cat and len(self) > 2 * cat:
             box = {key: [_text_box(key)] + 
-                        [_text_box('dictable[%s x %s]\n%s'%(len(self), len(self.keys()), self.keys()) if isinstance(v, dictable) else v, max_rows) for v in value[:cat]+value[-cat:]]
+                        [_text_box('dictable[%s x %s]\n%s'%(len(v), len(v.keys()), v.keys()) if isinstance(v, dictable) else v, max_rows) for v in value[:cat]+value[-cat:]]
                     for key, value in self.items()}
         else:
             box = {key: [_text_box(key)] + 
-                        [_text_box('dictable[%s x %s]\n%s'%(len(self), len(self.keys()), self.keys()) if isinstance(v, dictable) else v, max_rows) for v in value]
+                        [_text_box('dictable[%s x %s]\n%s'%(len(v), len(v.keys()), v.keys()) if isinstance(v, dictable) else v, max_rows) for v in value]
                     for key, value in self.items()}
     
         chars = {key : max([max([len(r) for r in v]) for v in value]) for key, value in box.items()}
@@ -890,8 +902,8 @@ class dictable(Dict):
         >>> y = dictable(b = ['x','y'])
         >>> assert x.join(y) == dictable(a = ['a', 'a', 'b', 'b'], b = ['x', 'y', 'x', 'y'])
 
-
         """
+        _lcols = lcols
         if not isinstance(other, dictable):
             other = dictable(other)
         if lcols is None:
@@ -901,8 +913,11 @@ class dictable(Dict):
         lcols = as_tuple(lcols); rcols = as_tuple(rcols)
         if len(lcols)!=len(rcols):
             raise ValueError('cannot inner join when cols on either side mismatch in length %s vs %s'%(lcols, rcols))
-        else:
-            print('inner joining on %s'%list(lcols))
+        elif _lcols is None:
+            if len(lcols) == 0:
+                print('outer joining')
+            else:
+                print('inner joining on %s'%list(lcols))
         cols = []
         for lcol, rcol in zip(lcols, rcols):
             if is_str(lcol):
