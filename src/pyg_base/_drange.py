@@ -630,6 +630,19 @@ def calendar(key = None, holidays = None, weekend = None, t0 = None, t1 = None):
         calendars[key] = Calendar(key, holidays = holidays, weekend = weekend, t0 = t0, t1 = t1)    
     return calendars[key]
 
+
+@np.vectorize
+def _weekday_intraday_clock(t):
+    t = dt(t)
+    j = ymd(t)
+    c = calendar()._populate()
+    if j in c.dt2int:
+        i = t - j
+        return c.dt2int[j] + (i.microseconds / 1e6 + i.seconds) / 86400
+    else:
+        j = c.adjust(j)        
+        return c.dt2int[j]
+
 @np.vectorize
 def _fraction_clock(t):
     t = dt(t)
@@ -669,7 +682,8 @@ _clocks = dict(f = _fraction_clock,
                w = _week_clock,
                m = _month_clock,
                y = _year_clock,
-               q = _quarter_clock
+               q = _quarter_clock,
+               k = _weekday_intraday_clock
                )
 
 
@@ -730,11 +744,15 @@ def clock(ts, time = None, t = None):
     elif is_ts(ts):    
         if isinstance(time, Calendar):
             return np.vectorize(time.clock)(ts.index)
+        elif callable(time):
+            return np.vectorize(time)(ts.index)            
         elif time == 'b':
             time = calendar()
             return np.vectorize(time.clock)(ts.index)
         elif time in _clocks:
             return _clocks[time](ts.index)
+        else:
+            raise ValueError('cannot determine time for ts=%s, time=%s'%(ts, time))            
     else:
         raise ValueError('cannot determine time for ts=%s, time=%s'%(ts, time))
 
