@@ -1,5 +1,6 @@
-from pyg_base._types import is_int, is_float, is_str, is_num, is_nan, is_ts
+from pyg_base._types import is_int, is_float, is_str, is_num, is_nan, is_ts, is_date
 from pyg_base._as_list import as_list
+from pyg_base._cache import cache
 import datetime
 import re
 import pandas as pd
@@ -8,6 +9,9 @@ from dateutil import parser
 # from dateutil.relativedelta import relativedelta
 from functools import reduce, partial
 import dateutil as du
+from dateutil import tz
+from pytz import country_timezones
+import pytz
 
 
 TMIN = datetime.datetime(1900,1,1)
@@ -25,6 +29,89 @@ period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]$')
 
 
 __all__ = ['dt','dt_bump', 'today', 'ymd', 'TMIN', 'TMAX', 'DAY', 'futcodes', 'dt2str', 'is_period', 'nth_weekday_of_month']
+
+@cache
+def tzones():
+    x = {iso :country_timezones[iso] for iso in country_timezones}
+    tzs = {iso: code[0] for iso, code in x.items() if len(code) == 1}
+    for iso, code in x.items():
+        tzs.update({c.split('/')[-1].replace('_', ' ').lower(): c for c in code})
+    tzs  = {key : tz.gettz(value) for key, value in tzs.items()}
+    t = datetime.datetime.now()
+    tzs.update({v.tzname(t): v for v in tzs.values() if v is not None})
+    tzs['WET'] = tzs['western european'] = tzs['MA'] # Malta
+    tzs['EET'] = tzs['eastern european'] = tzs['GR']
+    tzs['CET'] = tzs['cental european'] = tzs['AT'] # austria
+    tzs['EST'] = tzs['eastern standard'] = tzs['new york']
+    tzs['CST'] = tzs['central standard'] = tzs['chicago']
+    tzs['greenwich mean time'] = tzs['GMT']
+    return tzs
+
+def as_tz(tzinfo):
+    if is_str(tzinfo):
+        zones = tzones()
+        if tzinfo in zones:
+            return zones[tzinfo]
+        elif tzinfo.lower() in zones:
+            return zones[tzinfo.lower()]
+        elif tzinfo.upper() in zones:
+            return zones[tzinfo.upper()]
+        else:
+            return pytz.timezone(tzinfo)
+    else:
+        return tzinfo
+
+def tz_convert(t, tzinfo = None):
+    """
+    if tzinfo is None: drops all timezone data
+    if tzinfo is not None: converts/localize the existing date to 
+    
+
+    Parameters
+    ----------
+    t : TYPE
+        DESCRIPTION.
+    tzinfo : TYPE, optional
+        DESCRIPTION. The default is None.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    if tzinfo is None:
+        ## we remove tzinfo
+        if isinstance(t, (pd.DataFrame, pd.Series)):
+            if t.index.tz is None:
+                return t
+            else:
+                res = t.copy()
+                res.index = [date.replace(tzinfo = None) for date in res.index]
+                return res
+        elif is_date(t):
+            return t if t.tzinfo is None else t.replace(tzinfo = None)
+        elif isinstance(t, list):
+            return type(t)([tz_convert(i, tzinfo) for i in t])
+        elif isinstance(t, dict):
+            return type(t)({key : tz_convert(value, tzinfo) for key, value in t.items()})
+        else:
+            return dt(t, tzinfo = tzinfo)
+    if isinstance(t, list):
+        return type(t)([tz_convert(i, tzinfo) for i in t])
+    elif isinstance(t, dict):
+        return type(t)({key : tz_convert(value, tzinfo) for key, value in t.items()})
+    if isinstance(t, (pd.DataFrame, pd.Series)):
+        res = t.copy()
+        if t.index.tz is None:
+            res.index = res.index.tz_localize(as_tz(tzinfo))
+        else:
+            res.index = res.index.tz_convert(as_tz(tzinfo))
+        return res
+    elif is_date(t):
+        return t.astimezone(as_tz(tzinfo))
+    else:
+        return dt(t, tzinfo)
 
 def today(date = None):
     now = date or datetime.datetime.now()
@@ -188,7 +275,7 @@ def np2dt(t):
     return res
 
         
-def uk2dt(t):
+def uk2dt(t, tzinfo = None):
     if t in ('', 'null'):
         return None
     res = parser.parse(t)
@@ -199,10 +286,10 @@ def uk2dt(t):
             raise ValueError('date %s is not in UK date format'%t)
     elif yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
         res = datetime.datetime(res.year, res.month, 1)
-    return res
+    return tz_convert(res, tzinfo)
 
 
-def us2dt(t):
+def us2dt(t, tzinfo = None):
     if t in ('', 'null'):
         return None
     res = parser.parse(t)
@@ -210,7 +297,7 @@ def us2dt(t):
         raise ValueError('the date is not in US format')
     if yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
         res = datetime.datetime(res.year, res.month, 1)
-    return res
+    return tz_convert(res, tzinfo)
 
 def none2dt(none = datetime.datetime.now):
     if callable(none):
@@ -248,7 +335,10 @@ def dt_bump(t, *bumps):
         elif is_str(bump):
             bump = bump.lower()
             if not is_period(bump):
-                raise ValueError('%s is not a period I know...'%bump)
+                try:
+                    t = tz_convert(t, bump)
+                except Exception:
+                    raise ValueError('%s is not a period I know...'%bump)
             if bump.endswith('d'):
                 t = t + DAY * int(bump[:-1])
             elif bump.endswith('w'):
@@ -281,7 +371,7 @@ def dt_bump(t, *bumps):
             t = t + bump
     return t
 
-def dt(*args, dialect = 'uk', none = datetime.datetime.now):
+def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     """
     A more generic constructor for datetime.datetime. 
     
@@ -349,41 +439,42 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now):
     """
     args = as_list(args)
     if len(args) == 0:
-        return none() if callable(none) else none
+        res = none() if callable(none) else none
+        return tz_convert(res, tzinfo)
     t = args[0]
     if isinstance(t, np.datetime64):
-        t = np2dt(t)
+        t = tz_convert(np2dt(t), tzinfo)
     elif isinstance(t, datetime.date) and not isinstance(t, datetime.datetime):
-        t = datetime.datetime(t.year, t.month, t.day)
+        t = datetime.datetime(t.year, t.month, t.day, tzinfo = as_tz(tzinfo))
     if isinstance(t, datetime.datetime):
-        return reduce(dt_bump, args[1:], t)
+        return reduce(dt_bump, args[1:], tz_convert(t, tzinfo))
     if len(args) == 1:
         if t is None:
-            return none() if callable(none) else none
+            return tz_convert(none(), tzinfo) if callable(none) else none
         elif is_num(t):
             if is_nan(t):
-                return none() if callable(none) else none
+                return tz_convert(none(), tzinfo) if callable(none) else none
             else:                
-                return num2dt(t)
+                return tz_convert(num2dt(t), tzinfo)
         elif is_bump(t):
-            return dt_bump(dt(0), t)
+            return dt_bump(dt(0, tzinfo = tzinfo), t)
         elif is_str(t):
-            return uk2dt(t) if dialect == 'uk' else us2dt(t)
+            return uk2dt(t, tzinfo = tzinfo) if dialect == 'uk' else us2dt(t, tzinfo = tzinfo)
                 # return int2dt(int(t)) + datetime.timedelta(float(t) % 1)
         else:
             raise ValueError('date format unrecognised %s'%t)
     elif len(args) == 2:
         y,m = ym(*args)
-        return datetime.datetime(y,m,1)
+        return datetime.datetime(y,m,1, tzinfo = as_tz(tzinfo))
     y,m,d = args[:3]
     t = _ymd(y,m,d)
     if len(args) == 4 and is_str(args[3]):
-        return nth_weekday_of_month(*args)
+        return tz_convert(nth_weekday_of_month(*args), tzinfo)
     if len(args) > 3:
         args = [int(a) for a in args[3:]] + [0,0,0]
-        return t + datetime.timedelta(hours = args[0], minutes = args[1], seconds = args[2])
+        return tz_convert(t + datetime.timedelta(hours = args[0], minutes = args[1], seconds = args[2]), tzinfo)
     else:
-        return t
+        return tz_convert(t, tzinfo)
 
 
 def nth_weekday_of_month(y, m, n, w):
@@ -408,7 +499,7 @@ def nth_weekday_of_month(y, m, n, w):
     res = t + datetime.timedelta(bump)
     return res
 
-def ymd(*args, dialect = 'uk', none = datetime.datetime.now):
+def ymd(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     """
     just like dt() but always returns date only (year/month/date) without fractions.
     see dt() for full documentation
@@ -418,8 +509,8 @@ def ymd(*args, dialect = 'uk', none = datetime.datetime.now):
     datetime.datetime
 
     """
-    t = dt(*args, dialect = dialect , none = none)
-    return datetime.datetime(t.year, t.month, t.day)
+    t = dt(*args, dialect = dialect , none = none, tzinfo = tzinfo)
+    return datetime.datetime(t.year, t.month, t.day, tzinfo = t.tzinfo)
 
 
 ndt = partial(dt, none = None)

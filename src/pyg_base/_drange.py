@@ -5,9 +5,6 @@ from pyg_base._dict import Dict
 from pyg_base._cache import cache
 import datetime
 from dateutil.rrule import rrule, MONTHLY, WEEKLY, DAILY, YEARLY, HOURLY, MINUTELY, SECONDLY, MO, TU, WE, TH, FR, SA, SU
-from dateutil import tz
-from pytz import country_timezones
-
 
 import numpy as np
 import re
@@ -23,22 +20,6 @@ isoformat = re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
     
 __all__ = ['date_range', 'drange', 'calendar', 'Calendar', 'clock', 'as_time']
 
-@cache
-def tzones():
-    x = {iso :country_timezones[iso] for iso in country_timezones}
-    tzs = {iso: code[0] for iso, code in x.items() if len(code) == 1}
-    for iso, code in x.items():
-        tzs.update({c.split('/')[-1].replace('_', ' ').lower(): c for c in code})
-    tzs  = {key : tz.gettz(value) for key, value in tzs.items()}
-    t = datetime.datetime.now()
-    tzs.update({v.tzname(t): v for v in tzs.values() if v is not None})
-    tzs['WET'] = tzs['western european'] = tzs['MA'] # Malta
-    tzs['EET'] = tzs['eastern european'] = tzs['GR']
-    tzs['CET'] = tzs['cental european'] = tzs['AT'] # austria
-    tzs['EST'] = tzs['eastern standard'] = tzs['new york']
-    tzs['CST'] = tzs['central standard'] = tzs['chicago']
-    tzs['greenwich mean time'] = tzs['GMT']
-    return tzs
 
 def as_time(t = None):
     """
