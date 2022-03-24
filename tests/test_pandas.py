@@ -132,4 +132,15 @@ def test_df_fillna():
     
 
     
+def test_sub_column_names_for_df():
+    df = pd.DataFrame(range(10), index = drange(9), columns = ['df'])
+    for f in (sub_, add_, div_, mul_):
+        res = f(df,df)
+        assert isinstance(res, pd.DataFrame)
+        assert list(res.columns) == ['df']
+    df2 = pd.DataFrame(range(10), index = drange(9), columns = ['df2'])
+    for f in (sub_, add_, div_, mul_):
+        res = f(df,df2)
+        assert isinstance(res, pd.DataFrame)
+        assert list(res.columns) == [0]
     
