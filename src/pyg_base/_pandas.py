@@ -864,7 +864,12 @@ class presync(wrapper):
                 if is_int(columns):
                     res = {i: self.function(*df_column(args_, column = None, i = i), **df_column(kwargs_, column=None, i = i)) for i in range(columns)}
                 elif columns is None:
-                    return self.function(*df_column(args_, column = None), **df_column(kwargs_, column = None))
+                    res = self.function(*df_column(args_, column = None), **df_column(kwargs_, column = None))
+                    if isinstance(res, pd.Series):
+                        cols1 = [tuple(ts.columns) for ts in tss if is_df(ts) and ts.shape[1]==1]
+                        if len(set(cols1))>0:
+                            res = pd.DataFrame(res) 
+                    return res
                 else:
                     columns = list(columns) if isinstance(columns, pd.Index) else as_list(columns)
                     columns = sorted(columns)
