@@ -1158,8 +1158,12 @@ def df_slice(df, lb = None, ub = None, openclose = '(]', n = 1):
         return pd.concat([pre, post]).sort_index()        
     if isinstance(df, list): 
         if isinstance(lb, list) and ub is None:
+            lb2df = dict(zip(lb,df))
+            lb = sorted(lb); df = [lb2df[key] for key in lb]
             ub = lb[1:] + [None]
         elif isinstance(ub, list) and lb is None:
+            ub2df = dict(zip(ub,df))
+            ub = sorted(ub); df = [ub2df[key] for key in ub]
             lb = [None] + ub[:-1]
         boundaries = sorted(set([date for date in lb + ub if date is not None]))
         df = [d if is_pd(d) else pd.Series(d, boundaries) for d in df]

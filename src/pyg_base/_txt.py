@@ -19,6 +19,8 @@ def _f12(value):
 def _lower(text):
     return text.lower() if is_str(text) else text
 
+
+
 @loop(list, dict, tuple)
 def _upper(text):
     return text.upper() if is_str(text) else text
@@ -57,6 +59,21 @@ def _replace(text, old, new = None):
             while arg in text:
                 text = text.replace(arg, new)
     return text
+
+
+def as_ascii(text):
+    if is_str(text):
+        return ''.join([x for x in text if len(ascii(x))==3])
+    else:
+        return text
+
+@loop(list, dict, tuple)
+def _relabel_lower(v):
+    if is_str(v):
+        return _replace(_replace(v.strip(), ['"', "'", ',', ';', '.', '(', ')', '£', '$','#', ':', '?']), ['/', ' ', '&'], '_').lower()
+    else:
+        return v    
+
 
 @loop(list, dict, tuple)
 def _strip(text, chars = None):
@@ -212,6 +229,20 @@ def lower(value):
     >>> assert lower(dict(a = 'The Brown Fox', b = 3.0)) ==  {'a': 'the brown fox', 'b': 3.0}
     """
     return _lower(value)
+
+def relabel_lower(value):
+    """
+    equivalent to txt.lower() with stipping and removing of spaces and comments:
+        - does not throw on non-string
+        - supports lists/dicts
+        
+    :Example:
+    ---------
+    >>> assert relabel_lower(['The Brown Fox',1]) == ['the_brown_fox',1]
+    >>> assert relabel_lower(dict(a = '"The Brown Fox ,  "', b = 3.0)) ==  {'a': 'the_brown_fox', 'b': 3.0}
+    """
+    return _relabel_lower(value)
+
 
 def upper(value):
     """

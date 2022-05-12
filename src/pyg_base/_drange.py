@@ -607,8 +607,19 @@ def calendar(key = None, holidays = None, weekend = None, t0 = None, t1 = None):
     - calendar('US') will return a US calendar if that is already cached
     - calendar('US', us_holiday_dates) will construct a calendar with holiday dates and then cache it
     """
-    if key not in calendars or holidays is not None or weekend is not None or t0 is not None or t1 is not None:
-        calendars[key] = Calendar(key, holidays = holidays, weekend = weekend, t0 = t0, t1 = t1)    
+    if isinstance(key, Calendar):
+        if holidays is None and weekend is None and t0 is None and t1 is None:
+            calendars[key.key] = key
+            key = key.key
+        else:
+            holidays = holidays or list(key.holidays.keys())
+            weekend = weekend or key.weekend
+            t0 = t0 or key.t0
+            t1 = t1 or key.t1
+            key = key.key
+            calendars[key] = Calendar(key, holidays = holidays, weekend = weekend, t0 = t0, t1 = t1)            
+    elif key not in calendars or holidays is not None or weekend is not None or t0 is not None or t1 is not None:
+        calendars[key] = Calendar(key, holidays = holidays, weekend = weekend, t0 = t0, t1 = t1)
     return calendars[key]
 
 

@@ -26,7 +26,7 @@ yyyymm = re.compile('^[0-9]{4}[-/ .][0-9]{1,2}$')
 yyyymmm = re.compile('^[0-9]{4}[-/ .](%s)[a-z]*$'%('|'.join(months)), re.IGNORECASE)
 wkdays = dict(mon = 0, tue = 1, wed = 2, thu = 3, fri = 4, sat = 5, sun = 6)
 period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]$')
-
+mmm2m = dict(jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12)
 
 __all__ = ['dt','dt_bump', 'today', 'ymd', 'TMIN', 'TMAX', 'DAY', 'futcodes', 'dt2str', 'is_period', 'nth_weekday_of_month']
 

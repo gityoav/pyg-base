@@ -21,7 +21,12 @@ __all__ = ['dict_concat', 'dictable', 'is_dictable']
 def nan2none(v):
     return None if is_nan(v) or (is_str(v) and (len(v.strip()) == 0 or v[0] == '#' or v == 'n/a')) else v
 
-
+def relabel_lower(v):
+    if is_str(v):
+        return v.strip().replace(' ', '_').replace('"','').replace("'",'').replace(',','').lower()
+    else:
+        return v    
+    
 def dict_concat(*dicts):
     """
     A method of turning a list of dicts into one happy dict sharing its keys
@@ -784,7 +789,7 @@ class dictable(Dict):
             sheet_name = 0
         df = io.parse(sheet_name)
         res = cls(df)
-        res = res.relabel(lambda v: v.strip().replace(' ', '_'))
+        res = res.relabel(lambda v: v.strip().replace(' ', '_').replace('"','').replace("'",''))
         res = res.do(nan2none)
         if floats:
             res = res.do(try_back(as_float), floats)
@@ -795,6 +800,9 @@ class dictable(Dict):
         if no_none:
             for col in as_list(no_none):
                 res = res.exc(**{col : None})
+        for col in [col for col in res.keys() if col.startswith('Unnamed:')]:
+            if set(res[col]) == set([None]):
+                res = res-col
         return res
     
     def unlist(self):
