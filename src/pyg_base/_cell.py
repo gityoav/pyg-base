@@ -8,7 +8,7 @@ from pyg_base._ulist import ulist
 from pyg_base._tree_repr import tree_repr
 from pyg_base._decorators import wrapper
 from pyg_base._logger import logger
-from pyg_base._types import is_strs, is_date
+from pyg_base._types import is_strs, is_date, is_num
 from pyg_base._dag import get_DAG, get_GAD, add_edge, del_edge, topological_sort
 from copy import copy
 import datetime
@@ -630,7 +630,7 @@ class cell(dictattr):
             kwargs = {arg: self[arg] for arg in self._args if arg in self}
             function = self.function if isinstance(self.function, self._func) else self._func(self.function)
             mode = 0 if mode == -1 else mode
-            res, called_args, called_kwargs = function(go = go-1 if go>0 else go, mode = mode, **kwargs)
+            res, called_args, called_kwargs = function(go = go-1 if is_num(go) and go>0 else go, mode = mode, **kwargs)
             c = self + called_kwargs
             output = cell_output(c)
             if output is None:
@@ -710,7 +710,7 @@ class cell(dictattr):
 
         """
         res = (self + kwargs)
-        if res.run() or go!=0:
+        if res.run() or (is_date(go) and self.get(_updated, go) <= go)  or (is_num(go) and go!=0):
             res = res._go(go = go, mode = mode)
             address = res._address
             if address in UPDATED:
