@@ -11,7 +11,7 @@ We then need to worry about multiple columns if there are. If none, each timeser
 If there are multiple columns, we will perform the calculations columns by columns. 
 
 """
-from pyg_base._types import is_df, is_str, is_num, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
+from pyg_base._types import is_df, is_str, is_num, is_series, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
@@ -1018,13 +1018,32 @@ def le_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     return _le_(a,b, join = join, method = method, columns = columns)
 
+def _align_columns(a, b, func):
+    da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
+    if da == db or max(da, db) <= 1:
+        return np.minimum(a,b)
+    a, b = (a, b) if da == 2 else (b, a)
+    if is_series(b):
+        b = pd.concat([b] * a.shape[1], axis=1)
+        b.columns = a.columns
+    else:
+        b = np.concatenate([b] * a.shape[1], axis=1)
+    return func(a,b)
+        
+def _minimum(a, b):
+    return _align_columns(a, b, np.minimum)
+
+def _maximum(a, b):
+    return _align_columns(a, b, np.maximum)
+
+
 def min_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     equivalent to redced np.minimum operation supporting presynching of timeseries
     """
     dfs = as_list(a) + as_list(b)
-    dfs = df_sync(dfs, join = join, method = method, columns = columns)    
-    return reducer(np.minimum, dfs)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
+    return reducer(_minimum, dfs)
 
 def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
@@ -1032,7 +1051,7 @@ def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     dfs = as_list(a) + as_list(b)
     dfs = df_sync(dfs, join = join, method = method, columns = columns)
-    return reducer(np.maximum, dfs)
+    return reducer(_maximum, dfs)
 
 
 def _closed(oc):
