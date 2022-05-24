@@ -127,6 +127,10 @@ def _encode(value, unchanged = None):
         if _obj not in res and type(value)!=dict:
             res[_obj] = _encode(type(value), unchanged)
         return res
+    elif 'tensorflow.python.keras' in str(type(value)): ## A bit of a cheat not to have tensorflow explicit dependency
+        res = _encode(model_to_config_and_weights(value))
+        res['_obj'] = _keras_from_config_and_weights
+        return res        
     elif is_pd(value):
         return {_data : pd2bson(value), _obj : _bson2pd}
     elif is_arr(value):
@@ -209,6 +213,9 @@ def encode(value, unchanged = None):
     """
     return _encode(value, unchanged)
 
+def model_to_config_and_weights(value):
+    return dict(model = type(value), weights = value.get_weights(), config = value.get_config())
+
 def pd2bson(value):
     """
     converts a value (usually a pandas.DataFrame/Series) to bytes using pickle
@@ -254,7 +261,29 @@ def bson2pd(data):
         res.shape
         return res
     except Exception:
-        return None        
+        return None
     
+def keras_from_config_and_weights(model, config, weights):
+    """
+
+    Parameters
+    ----------
+    model : keras model
+        Keras model
+    config : str
+        json of the model.
+    weights : list of numpy arrays 
+        model weights
+
+    Returns
+    -------
+    res : keras model
+
+    """
+    res = model.from_config(config)
+    res.set_weights(weights)
+    return res
+    
+_keras_from_config_and_weights = encode(keras_from_config_and_weights)
 _bson2pd = encode(bson2pd)
 _bson2np = encode(bson2np)

@@ -883,7 +883,12 @@ def _div_(a, b):
     """
     division of a by b supporting presynching (inner join) of timeseries
     """
-    return a/b
+    if is_num(b):
+        return np.nan if b == 0 else a/b
+    else:
+        denom = b.copy()
+        denom[denom == 0] = np.nan
+        return a/denom
 
 @presync
 def _sub_(a, b):

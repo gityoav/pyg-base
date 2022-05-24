@@ -291,3 +291,43 @@ class pd2np(wrapper):
 
 loop_all = loops(types = (pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict))
 
+
+@loop(dict, list, tuple)
+def _cut(arg, data):
+    if is_pd(arg):
+        return arg.drop(index = data.index)
+    else:
+        return arg
+
+class skip_if_data_pd(wrapper):
+    """
+    If a function has a 'data' parameter which is provided and is a timeseries, use it to start running from that point onwards
+    
+    :Example:
+    ---------
+    >>> a = pd.Series(range(6))
+    >>> f = skip_if_data_pd(lambda a: a ** 2)    
+    >>> assert list(f(a).values) == [0,1,4,9,16,25]
+    
+    >>> res = f(a, data = a.iloc[:4]) ## data is provided and is assumed to be the history of past calculations, regardless if it is actual value
+    >>> assert list(res.values) == [0,1,2,3] + [16,25]
+    
+    """
+    def wrapped(self, *args, **kwargs):
+        data = kwargs.pop('data', None)
+        if is_pd(data):
+            args, kwargs = _cut((args, kwargs), data)
+        res = self.function(*args, **kwargs)
+        if res is None: ## error handling
+            return None
+        if is_pd(data):
+            if not is_pd(res):
+                raise ValueError('if data parameter %s is a dataframe, it is part of the answer so result must also be a dataframe %s'%(data, res))                    
+            return pd.concat([data,res]).sort_index()
+        else:
+            return res
+            
+    
+    
+    
+
