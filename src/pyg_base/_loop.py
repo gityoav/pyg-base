@@ -1,6 +1,6 @@
 import pandas as pd; import numpy as np
-from pyg_base._inspect import getargs
-from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_array, is_tuple, is_dict
+from pyg_base._inspect import getargs, getcallarg
+from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_arr, is_array, is_tuple, is_dict
 from pyg_base._decorators import wrapper
 from pyg_base._as_list import as_tuple
 
@@ -277,10 +277,7 @@ class pd2np(wrapper):
     converts a numpy-based function to work on pandas by converting to a numpy arrage and then converting back to panadas dataframe
     """
     def wrapped(self, *args, **kwargs):
-        if len(args):
-            arg = args[0]
-        else:
-            arg = kwargs[getargs(self.function)[0]]
+        arg = getcallarg(self.function, args, kwargs)
         if not is_pd(arg):
             return self.function(*args, **kwargs)
         args_ = [_values(a) for a in args]
@@ -293,11 +290,22 @@ loop_all = loops(types = (pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict
 
 
 @loop(dict, list, tuple)
-def _cut(arg, data):
+def _cut_pd(arg, index):
     if is_pd(arg):
-        return arg.drop(index = data.index)
+        return arg.drop(index = index)
+    elif isinstance(arg, pd.Index):
+        return arg.drop(index) # index just has labels
     else:
         return arg
+
+@loop(dict, list, tuple)
+def _cut_np(arg, n, t = None):
+    if is_arr(arg) and (t is None or len(arg) == t):
+        return arg[n:]
+    else:
+        return arg
+
+
 
 class skip_if_data_pd(wrapper):
     """
@@ -316,7 +324,9 @@ class skip_if_data_pd(wrapper):
     def wrapped(self, *args, **kwargs):
         data = kwargs.pop('data', None)
         if is_pd(data):
-            args, kwargs = _cut((args, kwargs), data)
+            data = data.iloc[:-1]
+            index = data.index
+            args, kwargs = _cut_pd((args, kwargs), index = index)
         res = self.function(*args, **kwargs)
         if res is None: ## error handling
             return None
@@ -326,8 +336,64 @@ class skip_if_data_pd(wrapper):
             return pd.concat([data,res]).sort_index()
         else:
             return res
-            
+
+def _np2pd_(res, index = None, columns = None):
+    if is_pd(res) or not is_arr(res) or len(res.shape)>2 or (columns is None and index is None):
+        return res
+    elif len(res.shape) == 1:
+        if index is not None and len(res) == len(index):
+            return pd.Series(res, index)
+        if columns is not None and len(res) == len(columns):
+            return pd.Series(res, columns)
+        else:
+            return res
+    elif len(res.shape) == 2:
+        return pd.DataFrame(data = res, columns = columns, index = index) 
+    else:
+        return res
+
+class skip_if_data_pd_or_np(wrapper):
+    """
+    If a function has a 'data' parameter which is provided and is a timeseries or a numpy array, use it to start running from that point onwards
     
+    :Example:
+    ---------
+    >>> a = np.array([0,1,2,3,4,5])
+    >>> f = skip_if_data_pd_or_np(lambda a: a ** 2)    
+    >>> assert list(f(a)) == [0,1,4,9,16,25]
     
+    >>> res = f(a, data = a[:4]) ## data is provided and is assumed to be the history of past calculations, regardless if it is actual value
+    >>> assert list(res) == [0,1,2,3] + [16,25]
     
+    """
+    def wrapped(self, *args, **kwargs):
+        data = kwargs.pop('data', None)
+        arg = getcallarg(self.function, args, kwargs)
+        index = kwargs.pop('index', arg.index if is_pd(arg) else None)
+        columns = kwargs.pop('columns', arg.columns if is_df(arg) else None)
+        if index is not None:
+            index = pd.Index(index)
+        if data is not None:
+            t = None
+            if index is not None:
+                t = len(index)
+            else:
+                if is_arr(arg) or is_pd(arg):
+                    t = len(arg)
+            if is_pd(data): ## previous result is a timeseries
+                args, kwargs, index = _cut_pd((args, kwargs, index), index = data.index)
+            args, kwargs, index = _cut_np((args, kwargs, index), n = len(data), t = t)
+        res = self.function(*args, **kwargs)        
+        if res is None: ## error handling
+            return None
+        if is_arr(data):
+            if not is_arr(res):
+                raise ValueError('if data parameter %s is a numpy array, it is part of the answer so result must also be a dataframe %s'%(data, res))                                    
+            return np.concatenate([data,res])            
+        res_df = _np2pd_(res, index, columns)
+        if is_pd(data):
+            if not is_pd(res_df):
+                raise ValueError('if data parameter %s is a dataframe, it is part of the answer so result must also be a dataframe %s'%(data, res_df))                                    
+            return pd.concat([data,res]).sort_index()
+        return res_df
 

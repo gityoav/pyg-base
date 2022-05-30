@@ -91,6 +91,18 @@ def getargs(function, n = 0):
             return argspec.args[n:]
     except Exception:
         return []
+    
+
+def getcallarg(function, args, kwargs):
+    """
+    gets the first arg of a function
+    """
+    if len(args):
+        arg = args[0]
+    else:
+        arg = kwargs[getargs(function)[0]]
+    return arg
+
 
 def getcallargs(function, *args, **kwargs):
     """

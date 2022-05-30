@@ -437,7 +437,7 @@ def df_reindex(ts, index = None, method = None, limit = None):
     return _df_reindex(ts, index = index, method = method, limit = limit)
 
 
-def df_concat(objs, columns = None, axis=1, join = 'outer'):
+def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None):
     """
     simple concatenator, 
     - defaults to to concatenating by date (for timeseries)
@@ -521,6 +521,7 @@ def df_concat(objs, columns = None, axis=1, join = 'outer'):
             res.columns = columns 
         else:
             res = res.rename(columns = columns)
+    res = df_fillna(method, axis = 1 if axis == 0 else 1)
     return res
 
 

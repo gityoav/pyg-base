@@ -15,9 +15,9 @@ from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive
 from pyg_base._eq import eq, in_
 from pyg_base._file import read_csv
 from pyg_base._getitem import getitem, callitem, callattr
-from pyg_base._inspect import getargspec, getargs, getcallargs, call_with_callargs, argspec_defaults, argspec_required, argspec_update, argspec_add, kwargs2args
+from pyg_base._inspect import getargspec, getargs, getcallargs, getcallarg, call_with_callargs, argspec_defaults, argspec_required, argspec_update, argspec_add, kwargs2args
 from pyg_base._logger import logger, get_logger
-from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all, skip_if_data_pd
+from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all, skip_if_data_pd, skip_if_data_pd_or_np
 from pyg_base._named_dict import named_dict
 from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_concat, df_fillna, presync, df_sync, \
     add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_

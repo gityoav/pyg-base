@@ -62,7 +62,7 @@ def pd_to_parquet(value, path, compression = 'GZIP'):
     else:
         return value        
 
-def pd_read_parquet(path):
+def pd_read_parquet(path, **kwargs):
     """
     a small utility to read df/series from parquet, extending both pd.Series and non-string columns 
 
