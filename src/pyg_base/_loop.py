@@ -213,7 +213,7 @@ class loops(wrapper):
                 if axis in (1,-1):
                     return self.T(arg, args, kwargs)
                 else:
-                    n = arg.shape[-1]
+                    n = arg.shape[1]
                     res = [self._wrapped(_item_by_i(arg,i,n), (_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
                     return axis0_to_array(res, arg)
         elif isinstance(arg, self.types):
