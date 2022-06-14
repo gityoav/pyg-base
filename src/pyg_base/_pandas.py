@@ -273,8 +273,8 @@ def _nona(df, value = np.nan):
         mask = np.isinf(df)
     else:
         mask = df == value
-    if len(mask.shape) == 2:
-        mask = mask.min(axis=1) == 1
+    while len(mask.shape) > 1:
+        mask = mask.min(axis = 1)
     return df[~mask]
 
 def nona(a, value = np.nan):
@@ -320,7 +320,7 @@ def _df_reindex(ts, index, method = None, limit = None):
         return res
     elif is_arr(ts):
         if isinstance(index, pd.Index):
-            if len(index) == len(ts):
+            if len(index) == len(ts) or len(ts) <= 1:
                 return ts
             else:
                 raise ValueError('trying to reindex numpy array %s using pandas index %s'%(ts, index))
