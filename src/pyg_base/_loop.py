@@ -43,8 +43,11 @@ def shape(value):
  
 
 def _item_by_key(value, key, keys, i = None):
-    if isinstance(value, dict) and sorted(value.keys()) == keys:
-        return value[key] 
+    if isinstance(value, dict):
+        if sorted(value.keys()) == keys:
+            return value[key]
+        else:
+            return type(value)({k : _item_by_key(v, key, keys, i) for k, v in value.items()})
     elif isinstance(value, pd.Series) and sorted(value.index.values) == keys:
         return value[key] 
     elif isinstance(value, pd.DataFrame) and sorted(value.columns) == keys:
@@ -67,8 +70,11 @@ def _item_by_i(value, i, n):
         value = value.iloc[:,0]
     elif is_array(value) and len(value.shape) == 2 and value.shape[1] == 1:
         value = value.T[0]
-    if isinstance(value, (list, tuple)) and len(value) == n:
-        return value[i]
+    if isinstance(value, (list, tuple)):
+        if len(value) == n:
+            return value[i]
+        else:
+            return type(value)([_item_by_i(v, i, n) for v in value])
     elif is_array(value):
         if len(value.shape) == 2 and value.shape[-1] == n:
             return value.T[i]
