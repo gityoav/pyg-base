@@ -710,9 +710,9 @@ class dictable(Dict):
                 keys = keys[i:]
             return '\n\n'.join(res)
 
-    def sort(self, *by):
+    def sort(self, *by, **byval):
         """
-        Sorts the table either using a key, list of keys or functions of members
+        Sorts the table either using a key, list of keys or functions of members. Also allows sort on specific orders of the keys
         
         
         :Example:
@@ -731,11 +731,32 @@ class dictable(Dict):
         
         >>> d = d.sort(lambda b: b*3 % 11) ## sorting again by c but using a function
         >>> assert list(d.c) == list(range(11))
+        
+        :Example: Sorting based on specific values
+        ---------
+        >>> rs = dictable(key = list('abcdeffg'), gender = list('mmffmmff'))
+        >>> rs = rs.sort(key = ['c', 'a', 'f', 'd'], gender = ['f', 'm'])
+        
+        key|gender
+        ----------
+        c  |f     
+        a  |m     
+        f  |f     <--- female f before male f
+        f  |m     <---
+        d  |f     
+        g  |f     <--- g,b,e entries with no first key provided in sort, so move to bottom of list
+        b  |m     
+        e  |m    
         """
-        by = as_list(by)
-        if len(self) == 0 or len(by) == 0:
+        if len(self) == 0:
             return self.copy()
-        keys = self[as_tuple(by)]
+        elif len(by):
+            keys = self[by]            
+        elif len(byval):
+            dicts = {k : dict(zip(vals, range(len(vals)))) for k, vals in byval.items()}
+            keys = [[d.get(row[k], len(d)) for k,d in dicts.items()] for row in self]            
+        else:
+            return self.copy()
         keys2id = list(zip(keys, range(len(self))))
         _, rows = zip(*sort(keys2id))
         return type(self)({key: [value[i] for i in rows] for key, value in self.items()})
