@@ -50,7 +50,7 @@ def _item_by_key(value, key, keys, i = None):
             return type(value)({k : _item_by_key(v, key, keys, i) for k, v in value.items()})
     elif isinstance(value, pd.Series) and sorted(value.index.values) == keys:
         return value[key] 
-    elif isinstance(value, pd.DataFrame) and sorted(value.columns) == keys:
+    elif isinstance(value, pd.DataFrame) and sorted(value.columns) == sorted(keys):
         return value[key]
     elif is_array(value) and len(value.shape):
         if len(value.shape) == 2 and value.shape[1] == len(keys) and i is not None:
