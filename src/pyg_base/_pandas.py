@@ -681,7 +681,7 @@ def df_sync(dfs, join = 'ij', method = None, columns = 'ij'):
     else:
         return dfs
     listed = _list(values)
-    tss = [ts for ts in listed if is_ts(ts)]
+    tss = [ts for ts in listed if is_df(ts)]
     index = df_index(listed, join)
     dfs = df_reindex(dfs, index, method = method)
 
@@ -692,7 +692,35 @@ def df_sync(dfs, join = 'ij', method = None, columns = 'ij'):
         cols = df_columns(tss, columns)
         dfs = df_recolumn(dfs, cols)
     return dfs
+
+def _mask(df, value):
+    if is_num(value) and np.isnan(value):
+        return np.isnan(df)
+    elif is_num(value):
+        return df == value
+    elif isinstance(value, list):
+        return reducer(np.maximum, [_mask(df, v) for v in value]) 
+    else:
+        raise ValueError('not sure how to construct a mask from %s'%value)
+
+def df_apply(df, func, axis = 0, raw = False, result_type = None, args = None, params = None, exc = np.nan):
+    """
+    similar to df.apply(func, axis...) except we nan results when we don't have any entries in original calculation
+
+    :Example:
+    ---------
+    >>> df = pd.DataFrame(dict(a = [np.nan, np.nan], b = [np.nan, 1.]))
+    >>> assert np.isnan(df_apply(df, 'sum').a)
+    >>> assert df.apply('sum').a == 0
     
+    """
+    params = params or {}
+    args = args or ()
+    res = df.apply(func, axis = axis, raw = False, result_type = None, args = args, **params)
+    if len(as_list(exc)) > 0:
+        mask = ~_mask(df, exc)
+        res[mask.sum(axis = axis) == 0] = np.nan
+    return res   
 
 class presync(wrapper):
     """
@@ -1058,6 +1086,118 @@ def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     dfs = as_list(a) + as_list(b)
     dfs = df_sync(dfs, join = join, method = method, columns = columns)
     return reducer(_maximum, dfs)
+
+def mask2v(df, mask = np.nan, value = 0.0):
+    if not is_pd(mask):
+        mask = _mask(df, mask)
+    res = df.copy()
+    res[mask] = value
+    return res
+
+def df_count(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan):
+    """
+    apply count() on multiple dataframes
+    - synch the data
+    - removes nans (or any value in mask)
+
+    :Example:
+    ----------
+    >>> a = pd.DataFrame(dict(a = [1, 2], b = [np.nan, np.nan], c = [1, 2.]))
+    >>> b = pd.DataFrame(dict(a = [np.nan,2], b = [2, np.nan]))
+    >>> df_count(a,b, columns = 'oj')
+    
+       a  b  c
+    0  1  1  1
+    1  2  0  1
+    
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
+    masks = [_mask(df, exc) for df in dfs]
+    n = sum([~mask for mask in masks])
+    return n
+
+
+def df_sum(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan):
+    """
+    apply sum() on multiple dataframes
+    - synch the data
+    - removes nans (or any value in mask)
+    
+    :Example:
+    ----------
+    >>> a = pd.DataFrame(dict(a = [1, 2], b = [np.nan, np.nan], c = [1, 2.]))
+    >>> b = pd.DataFrame(dict(a = [np.nan,2], b = [2, np.nan]))
+    >>> df_sum(a,b)
+    
+         a    b    c
+    0  1.0  2.0  1.0
+    1  4.0  NaN  2.0
+    
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
+    masks = [_mask(df, exc) for df in dfs]
+    clean_dfs = [mask2v(df, mask, 0.0) for df, mask in zip(dfs, masks)]
+    res = sum(clean_dfs)
+    n = sum([~mask for mask in masks])
+    res[n == 0] = np.nan
+    return res       
+        
+def df_mean(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan):
+    """
+    apply mean() on multiple dataframes
+    - synch the data
+    - removes nans (or any value in mask)
+    
+    :Example:
+    ----------
+    >>> a = pd.DataFrame(dict(a = [1, 2], b = [np.nan, np.nan], c = [1, 2.]))
+    >>> b = pd.DataFrame(dict(a = [np.nan,2], b = [2, np.nan]))
+    >>> df_mean(a,b)
+    
+         a    b    c
+    0  1.0  2.0  1.0
+    1  2.0  NaN  2.0
+
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
+    masks = [_mask(df, exc) for df in dfs]
+    clean_dfs = [mask2v(df, mask, 0.0) for df, mask in zip(dfs, masks)]
+    res = sum(clean_dfs)
+    n = sum([~mask for mask in masks])
+    n[n == 0] = np.nan
+    return res / n
+
+def df_std(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan):
+    """
+    apply biased std() on multiple dataframes
+    - synch the data
+    - removes nans (or any value in mask)
+    
+    :Example:
+    ----------
+    >>> a = pd.DataFrame(dict(a = [1, 2], b = [np.nan, np.nan], c = [1, 2.]))
+    >>> b = pd.DataFrame(dict(a = [np.nan,2], b = [2, np.nan]))
+    >>> df_std(a,b)
+    
+         a    b    c
+    0  1.0  2.0  1.0
+    1  2.0  NaN  2.0
+
+    """
+    dfs = as_list(a) + as_list(b)
+    dfs = df_sync(dfs, join = join, method = method, columns = columns)
+    masks = [_mask(df, exc) for df in dfs]
+    clean_dfs = [mask2v(df, mask, 0.0) for df, mask in zip(dfs, masks)]
+    m1 = sum(clean_dfs)
+    m2 = sum([df**2 for df in clean_dfs])
+    n = sum([~mask for mask in masks])
+    n[n < 2] = np.nan
+    return (m2/n - (m1/n)**2) ** 0.5
+
+
 
 
 def _closed(oc):

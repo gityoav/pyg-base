@@ -19,8 +19,8 @@ from pyg_base._inspect import getargspec, getargs, getcallargs, getcallarg, call
 from pyg_base._logger import logger, get_logger
 from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all, skip_if_data_pd, skip_if_data_pd_or_np
 from pyg_base._named_dict import named_dict
-from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_concat, df_fillna, presync, df_sync, \
-    add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_
+from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_recolumn, df_concat, df_fillna, presync, df_sync, df_apply, \
+    add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_, df_count, df_sum, df_mean, df_std
 from pyg_base._parquet import pd_to_parquet, pd_read_parquet
 from pyg_base._perdictable import join, perdictable
 from pyg_base._reducer import reducer, reducing
