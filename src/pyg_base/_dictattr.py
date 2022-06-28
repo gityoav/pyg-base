@@ -2,6 +2,7 @@ from pyg_base._as_list import as_list, is_rng
 from pyg_base._eq import eq
 from pyg_base._types import is_str
 from pyg_base._ulist import ulist
+from copy import copy
 
 __all__ = ['dictattr', 'relabel']
 
@@ -187,7 +188,7 @@ class dictattr(dict):
             return res
     
     def copy(self):
-        return type(self)(**self)
+        return copy(self)
     
     def __getstate__(self):
         return dict(self)
