@@ -4,14 +4,14 @@ from pyg_base._acell import acell, acell_load, acell_func, acell_go
 from pyg_base._cache import cache, get_cache
 from pyg_base._cell import cell, cell_go, cell_item, cell_func, cell_load, cell_output, cell_clear, cell_inputs
 from pyg_base._cfg import mkdir, cfg_read, cfg_write, CFG
-from pyg_base._dates import dt,dt_bump, as_tz, tz_convert, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m
+from pyg_base._dates import dt, uk2dt, us2dt, dt_bump, as_tz, tz_convert, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m
 from pyg_base._dag import get_DAG, get_DAGs, get_GADs, get_GAD, add_edge, topological_sort, descendants, del_edge
 from pyg_base._decorators import kwargs_support, wrapper, try_value, try_back, try_nan, try_none, try_zero, try_false, try_true, try_list, timer
 from pyg_base._dict import Dict, items_to_tree, tree_items, tree_keys, tree_values, tree_setitem, tree_getitem, tree_get, tree_update, dict_invert
 from pyg_base._dictattr import dictattr, relabel
 from pyg_base._dictable import dictable, dict_concat, is_dictable
 from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time
-from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive
+from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive, dumps
 from pyg_base._eq import eq, in_
 from pyg_base._file import read_csv
 from pyg_base._getitem import getitem, callitem, callattr

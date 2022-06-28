@@ -1,7 +1,7 @@
 import jsonpickle as jp
 import re
 from pyg_base._types import is_int, is_float, is_str, is_date, is_bool, is_pd, is_arr
-from pyg_base._dates import dt, iso
+from pyg_base._dates import dt, iso, uk2dt
 from pyg_base._decorators import try_back
 from pyg_base._logger import logger
 from pyg_base._loop import loop
@@ -10,7 +10,7 @@ import datetime
 from functools import partial
 from enum import Enum
 import numpy as np
-
+import json
 
 _obj = '_obj'
 _data = 'data'
@@ -170,7 +170,7 @@ def _as_primitive(value):
 
 def as_primitive(value):
     return _as_primitive(value)
-
+    
 
 def encode(value, unchanged = None):
     """
@@ -212,6 +212,20 @@ def encode(value, unchanged = None):
 
     """
     return _encode(value, unchanged)
+
+_uk2dt = encode(uk2dt)
+
+@loop(list, tuple, dict)
+def _dumps(value):
+    if is_date(value):
+        return dict(_obj = _uk2dt, t = value.isoformat())
+    else:
+        return value
+
+def dumps(value):
+    value = _dumps(value)
+    return json.dumps(value)
+
 
 def model_to_config_and_weights(value):
     return dict(model = type(value), weights = value.get_weights(), config = value.get_config())
