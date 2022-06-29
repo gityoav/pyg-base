@@ -11,7 +11,7 @@ from pyg_base._dict import Dict, items_to_tree, tree_items, tree_keys, tree_valu
 from pyg_base._dictattr import dictattr, relabel
 from pyg_base._dictable import dictable, dict_concat, is_dictable
 from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time
-from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive, dumps
+from pyg_base._encode import encode, decode, bson2pd, pd2bson, as_primitive, dumps, loads
 from pyg_base._eq import eq, in_
 from pyg_base._file import read_csv
 from pyg_base._getitem import getitem, callitem, callattr

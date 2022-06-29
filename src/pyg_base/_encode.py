@@ -1,7 +1,8 @@
 import jsonpickle as jp
 import re
 from pyg_base._types import is_int, is_float, is_str, is_date, is_bool, is_pd, is_arr
-from pyg_base._dates import dt, iso, uk2dt
+from pyg_base._as_list import as_list 
+from pyg_base._dates import dt, iso, uk2dt, dt2str
 from pyg_base._decorators import try_back
 from pyg_base._logger import logger
 from pyg_base._loop import loop
@@ -40,8 +41,6 @@ def decode_str(value):
         return value
     else:
         return res
-
-
 
 @loop(list, tuple)
 def _decode(value, date = None):
@@ -102,7 +101,7 @@ def decode(value, date = None):
 loads = partial(decode, date = True)
 
 @loop(list, tuple)
-def _encode(value, unchanged = None):
+def _encode(value, unchanged = None, unchanged_keys = None):
     if hasattr(value, '_encode') and not isinstance(value, type):
         res = value._encode
         if not isinstance(res, str):
@@ -123,12 +122,13 @@ def _encode(value, unchanged = None):
     elif unchanged and isinstance(value, unchanged):
          return value
     elif isinstance(value, dict):
-        res = {k : _encode(v, unchanged) for k, v in value.items()}
+        unchanged_keys = as_list(unchanged_keys)
+        res = {k : v if unchanged_keys and k in unchanged_keys else _encode(v, unchanged, unchanged_keys) for k, v in value.items()}
         if _obj not in res and type(value)!=dict:
-            res[_obj] = _encode(type(value), unchanged)
+            res[_obj] = _encode(type(value), unchanged, unchanged_keys)
         return res
     elif 'tensorflow.python.keras' in str(type(value)): ## A bit of a cheat not to have tensorflow explicit dependency
-        res = _encode(model_to_config_and_weights(value))
+        res = _encode(model_to_config_and_weights(value), unchanged, unchanged_keys)
         res['_obj'] = _keras_from_config_and_weights
         return res        
     elif is_pd(value):
@@ -172,7 +172,7 @@ def as_primitive(value):
     return _as_primitive(value)
     
 
-def encode(value, unchanged = None):
+def encode(value, unchanged = None, unchanged_keys = None):
     """
     
     encode/decode are performed prior to sending to mongodb or after retrieval from db. 
@@ -211,21 +211,42 @@ def encode(value, unchanged = None):
     A pre-json object
 
     """
-    return _encode(value, unchanged)
+    return _encode(value, unchanged, unchanged_keys)
 
 _uk2dt = encode(uk2dt)
+_array = encode(np.array)
 
 @loop(list, tuple, dict)
 def _dumps(value):
     if is_date(value):
-        return dict(_obj = _uk2dt, t = value.isoformat())
+        return dict(_obj = _uk2dt, t = dt2str(value))
+    elif isinstance(value, np.ndarray):
+        if len(value.shape) == 0:
+            return as_primitive(value)
+        elif len(value.shape) == 1:
+            return dict(_obj = _array, object = _dumps(list(value)))
+        elif len(value.shape) == 2:
+            return dict(_obj = _array, object = _dumps(list(map(list,value))))
+        elif len(value.shape) == 3:
+            return dict(_obj = _array, object = _dumps([list(map(list,v)) for v in value]))
+        else:
+            return as_primitive(value)
     else:
-        return value
+        return as_primitive(value)
 
 def dumps(value):
+    """
+    an extended version of json.dumps, being able to handle dates and arrays
+    """
     value = _dumps(value)
     return json.dumps(value)
 
+def loads(value):
+    """
+    an extended version of json.dumps, being able to handle dates and arrays
+    """
+    value = json.loads(value)
+    return decode(value)
 
 def model_to_config_and_weights(value):
     return dict(model = type(value), weights = value.get_weights(), config = value.get_config())
