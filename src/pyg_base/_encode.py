@@ -241,12 +241,20 @@ def dumps(value):
     value = _dumps(value)
     return json.dumps(value)
 
-def loads(value):
+@loop(list, tuple, dict)
+def _loads(value):
     """
     an extended version of json.dumps, being able to handle dates and arrays
     """
-    value = json.loads(value)
-    return decode(value)
+    if isinstance(value, str):    
+        value = json.loads(value)
+        return decode(value)
+    else:
+        return value
+    
+def loads(value):
+    return _loads(value)    
+
 
 def model_to_config_and_weights(value):
     return dict(model = type(value), weights = value.get_weights(), config = value.get_config())
