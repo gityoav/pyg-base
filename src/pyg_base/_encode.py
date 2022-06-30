@@ -65,7 +65,17 @@ def _decode(value, date = None):
             return value if date.search(value) is None else dt(value)
     elif isinstance(value, dict):
         res = type(value)(**{_decode(k, date) : _decode(v, date) for k, v in value.items()})
-        return res.pop(_obj)(**res) if _obj in res.keys() else res
+        if _obj in res.keys():
+            obj = res.pop(_obj)
+            if isinstance(obj, dict): # we have been unable to convert to object
+                v = list(obj.values())[0]
+                try:
+                    import pyg
+                    obj = getattr(pyg, v.split('.')[-1])
+                except:
+                    raise ValueError('Unable to map "%s" into a valid object'%v)
+            res = obj(**res)
+        return res
     else:
         return value
     

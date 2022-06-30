@@ -11,13 +11,18 @@ from pyg_base._dates import ndt
 from pyg_base._sort import sort, cmp
 from pyg_base._encode import _encode, _obj
 from pyg_base._file import read_csv
+from pyg_base._cache import cache
 from functools import reduce
 import pandas as pd
 import re
 
 __all__ = ['dict_concat', 'dictable', 'is_dictable']
 
+@cache
+def _print_cols(*lcols):
+    print('inner joining on %s. To stop message, specify columns explicitly in the join'%list(lcols))
 
+    
 def nan2none(v):
     return None if is_nan(v) or (is_str(v) and (len(v.strip()) == 0 or v[0] == '#' or v == 'n/a')) else v
 
@@ -943,10 +948,8 @@ class dictable(Dict):
         if len(lcols)!=len(rcols):
             raise ValueError('cannot inner join when cols on either side mismatch in length %s vs %s'%(lcols, rcols))
         elif _lcols is None:
-            if len(lcols) == 0:
-                print('outer joining')
-            else:
-                print('inner joining on %s'%list(lcols))
+            if len(lcols) > 0:
+                _print_cols(*lcols)
         cols = []
         for lcol, rcol in zip(lcols, rcols):
             if is_str(lcol):
