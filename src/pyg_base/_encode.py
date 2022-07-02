@@ -6,6 +6,7 @@ from pyg_base._dates import dt, iso, uk2dt, dt2str
 from pyg_base._decorators import try_back
 from pyg_base._logger import logger
 from pyg_base._loop import loop
+from pyg_base._inspect import getargs
 import pickle
 import datetime
 from functools import partial
@@ -74,7 +75,11 @@ def _decode(value, date = None):
                     obj = getattr(pyg, v.split('.')[-1])
                 except:
                     raise ValueError('Unable to map "%s" into a valid object'%v)
-            res = obj(**res)
+            try:
+                res = obj(**res)
+            except TypeError: # function got an unexpected keys. This is because we do not delete old keys in documents
+                args = getargs(obj)
+                res = obj(**{k : v for k, v in res.items() if k in args})
         return res
     else:
         return value
