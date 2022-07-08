@@ -288,49 +288,96 @@ class cell_func(wrapper):
                                         unitemized = as_list(unitemized),
                                         uncalled = as_list(uncalled))
 
-    def wrapped(self, *args, **kwargs):
-        """
-        function = lambda a: a+1
-        self = cell_func(function)
-        args = ()
-        kwargs = dict(go = 0, a = 1)
-        import inspect
+    # def wrapped(self, *args, **kwargs):
+    #     """
+    #     function = lambda a: a+1
+    #     self = cell_func(function)
+    #     args = ()
+    #     kwargs = dict(go = 0, a = 1)
+    #     import inspect
         
         
-        """
+    #     """
+    #     go = kwargs.pop('go', 0)
+    #     mode = kwargs.pop('mode', 0)
+    #     function_ = cell_item(cell_go(self.function, go))    
+    #     callargs = getcallargs(function_, *args, **kwargs)
+    #     spec = getargspec(function_)
+    #     arg_names = [] if spec.args is None else spec.args
+        
+    #     c = dict(callargs)
+    #     varargs = c.pop(spec.varargs) if spec.varargs else []
+    #     loaded_args = cell_load(varargs, mode)
+    #     called_varargs = cell_go(loaded_args , go)
+    #     itemized_varargs = cell_item(called_varargs, _data)
+
+    #     varkw = c.pop(spec.varkw) if spec.varkw else {}
+    #     loaded_varkw = {k : v if k in self.unloaded else cell_load(v, mode) for k, v in varkw.items()}
+    #     called_varkw = {k : v if k in self.uncalled else cell_go(v, go) for k, v in loaded_varkw.items()}
+    #     itemized_varkw = {k : v if k in self.unitemized else _cell_item(v, self.relabels[k], True) if k in self.relabels else _cell_item(v, k) for k, v in called_varkw.items()}
+
+    #     defs = spec.defaults if spec.defaults else []
+    #     params = dict(zip(arg_names[-len(defs):], defs))
+    #     params.update(c)
+    #     loaded_params = {k : v if k in self.unloaded else cell_load(v, mode) for k, v in params.items()}
+    #     called_params = {k : v if k in self.uncalled else cell_go(v, go) for k, v in loaded_params.items()}
+    #     itemized_params = {k : v if k in self.unitemized else _cell_item(v, self.relabels[k], True) if k in self.relabels else _cell_item(v, k) for k, v in called_params.items()}
+        
+    #     args_ = [itemized_params[arg] for arg in arg_names if arg in params] + list(itemized_varargs)
+    #     res = function_(*args_, **itemized_varkw)
+    #     called_params.update(called_varkw)
+    #     return res, itemized_varargs, called_params
+    
+    @property
+    def output(self):
+        return getattr(self.function, _output, None)
+    
+    def loaded(self, *args, **kwargs):
         go = kwargs.pop('go', 0)
         mode = kwargs.pop('mode', 0)
-        function_ = cell_item(cell_go(self.function, go))    
-        callargs = getcallargs(function_, *args, **kwargs)
-        spec = getargspec(function_)
+        loaded_function = cell_item(cell_go(self.function, go))    
+        callargs = getcallargs(loaded_function, *args, **kwargs)
+        spec = getargspec(loaded_function)
         arg_names = [] if spec.args is None else spec.args
-        
         c = dict(callargs)
+        
         varargs = c.pop(spec.varargs) if spec.varargs else []
         loaded_args = cell_load(varargs, mode)
-        called_varargs = cell_go(loaded_args , go)
-        itemized_varargs = cell_item(called_varargs, _data)
-
+        
         varkw = c.pop(spec.varkw) if spec.varkw else {}
-        loaded_varkw = {k : v if k in self.unloaded else cell_load(v, mode) for k, v in varkw.items()}
-        called_varkw = {k : v if k in self.uncalled else cell_go(v, go) for k, v in loaded_varkw.items()}
-        itemized_varkw = {k : v if k in self.unitemized else _cell_item(v, self.relabels[k], True) if k in self.relabels else _cell_item(v, k) for k, v in called_varkw.items()}
+        loaded_varkw = {k : v if k in self.unloaded else cell_load(v, mode) for k, v in varkw.items()}        
 
         defs = spec.defaults if spec.defaults else []
         params = dict(zip(arg_names[-len(defs):], defs))
         params.update(c)
         loaded_params = {k : v if k in self.unloaded else cell_load(v, mode) for k, v in params.items()}
+
+        return loaded_function, loaded_args, loaded_varkw, loaded_params, arg_names, go
+        
+        
+    def wrapped(self, *args, **kwargs):
+        """
+        we split the calculation into two stages: 
+            1) We load all cells that need loading as inputs to the function
+            2) We then call each cell and retrieve the value
+        """
+
+        loaded_function, loaded_args, loaded_varkw, loaded_params, arg_names, go = self.loaded(*args, **kwargs)
+        
+        called_varargs = cell_go(loaded_args , go)
+        itemized_varargs = cell_item(called_varargs, _data)
+
+        called_varkw = {k : v if k in self.uncalled else cell_go(v, go) for k, v in loaded_varkw.items()}
+        itemized_varkw = {k : v if k in self.unitemized else _cell_item(v, self.relabels[k], True) if k in self.relabels else _cell_item(v, k) for k, v in called_varkw.items()}
+
         called_params = {k : v if k in self.uncalled else cell_go(v, go) for k, v in loaded_params.items()}
         itemized_params = {k : v if k in self.unitemized else _cell_item(v, self.relabels[k], True) if k in self.relabels else _cell_item(v, k) for k, v in called_params.items()}
         
-        args_ = [itemized_params[arg] for arg in arg_names if arg in params] + list(itemized_varargs)
-        res = function_(*args_, **itemized_varkw)
+        args_ = [itemized_params[arg] for arg in arg_names if arg in loaded_params] + list(itemized_varargs)
+        res = loaded_function(*args_, **itemized_varkw)
         called_params.update(called_varkw)
         return res, itemized_varargs, called_params
-    
-    @property
-    def output(self):
-        return getattr(self.function, _output, None)
+        
         
 
 def is_pairs(pairs):
@@ -602,6 +649,11 @@ class cell(dictattr):
         res = self if self.function is None else self - self._output
         return type(self)(**cell_clear(dict(res)))
     
+
+    @property
+    def _function(self):
+        function = self.function if isinstance(self.function, self._func) else self._func(self.function)
+        return function
     
     def _go(self, go = 0, mode = 0):
         """
@@ -628,7 +680,7 @@ class cell(dictattr):
                 msg = str(address)
             logger.info(msg)
             kwargs = {arg: self[arg] for arg in self._args if arg in self}
-            function = self.function if isinstance(self.function, self._func) else self._func(self.function)
+            function = self._function
             mode = 0 if mode == -1 else mode
             res, called_args, called_kwargs = function(go = go-1 if is_num(go) and go>0 else go, mode = mode, **kwargs)
             c = self + called_kwargs

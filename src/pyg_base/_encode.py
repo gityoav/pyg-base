@@ -135,7 +135,7 @@ def _encode(value, unchanged = None, unchanged_keys = None):
     elif value is None or is_str(value):
         return value
     elif unchanged and isinstance(value, unchanged):
-         return value
+          return value
     elif isinstance(value, dict):
         unchanged_keys = as_list(unchanged_keys)
         res = {k : v if unchanged_keys and k in unchanged_keys else _encode(v, unchanged, unchanged_keys) for k, v in value.items()}

@@ -187,9 +187,6 @@ def descendants(dag, node, exc = None):
         return sum(map(list,nodes), [])
 
 
-
-
-
 def dag_inverse(dag = None):
     d = get_DAG(dag)
     g = {}
