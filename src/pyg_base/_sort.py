@@ -2,7 +2,7 @@
 import numpy as np
 from pyg_base._types import is_nan, is_iterable
 from pyg_base._loop import len0
-from pyg_base._encode import as_primitive
+from pyg_base._as_primitive import as_primitive
 
 __all__ = ['Cmp', 'cmp', 'sort',]
 

@@ -9,7 +9,6 @@ from pyg_base._inspect import getargs
 from pyg_base._decorators import kwargs_support, try_none, try_back
 from pyg_base._dates import ndt
 from pyg_base._sort import sort, cmp
-from pyg_base._encode import _encode, _obj
 from pyg_base._file import read_csv
 from pyg_base._cache import cache
 from functools import reduce
@@ -386,17 +385,17 @@ class dictable(Dict):
         else:
             super(dictable, self).__delitem__(attr)
     
-    def _encode(self):
-        """
-        We override the encoding method for dictable by enforcing columns to be specified as part of the dict.
-        This ensures that when constructed from mongodb, old columns that may still be part of the cell are not included in the construction
+    # def _encode(self):
+    #     """
+    #     We override the encoding method for dictable by enforcing columns to be specified as part of the dict.
+    #     This ensures that when constructed from mongodb, old columns that may still be part of the cell are not included in the construction
 
-        """
-        res = {k : _encode(v) for k, v in self.items()}
-        if _obj not in res:
-            res[_obj] = _encode(type(self))
-        res['columns'] = self.columns
-        return res
+    #     """
+    #     res = {k : _encode(v) for k, v in self.items()}
+    #     if _obj not in res:
+    #         res[_obj] = _encode(type(self))
+    #     res['columns'] = self.columns
+    #     return res
 
     def inc(self, *functions, **filters):
         """
