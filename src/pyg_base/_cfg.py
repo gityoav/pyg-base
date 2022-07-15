@@ -42,6 +42,7 @@ cfg_read.__doc__ = 'reads the config file from %s' % CFG
 def cfg_write(cfg):
     with open(mkdir(CFG), 'w') as f:
         json.dump(cfg, f)
+        
 cfg_write.__doc__ = 'writes the config file provided to %s' % CFG
     
 

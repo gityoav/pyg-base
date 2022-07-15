@@ -3,6 +3,8 @@ from pyg_base._types import is_int, is_str, is_ts, is_arr, is_pd, is_nan
 from pyg_base._as_list import as_list 
 from pyg_base._dict import Dict
 from pyg_base._cache import cache
+from pyg_base._cfg import cfg_read
+
 import datetime
 from dateutil.rrule import rrule, MONTHLY, WEEKLY, DAILY, YEARLY, HOURLY, MINUTELY, SECONDLY, MO, TU, WE, TH, FR, SA, SU
 
@@ -20,6 +22,21 @@ isoformat = re.compile('^[0-9]{4}-[0-9]{2}-[0-9]{2}T')
     
 __all__ = ['date_range', 'drange', 'calendar', 'Calendar', 'clock', 'as_time']
 
+cfg = cfg_read()
+
+def _day_start(day_start = None):
+    if day_start is None:
+        res = cfg.get('day_start',0)
+    else:
+        res = day_start
+    return as_time(res)
+
+def _day_end(day_end = None):
+    if day_end is None:
+        res = cfg.get('day_end',235959)
+    else:
+        res = day_end
+    return as_time(res)
 
 def as_time(t = None):
     """
@@ -360,7 +377,7 @@ class Calendar(Dict, _calendar):
     def is_bday(self, date):
         return date.weekday() not in self.weekend and ymd(date) not in self.holidays
 
-    def is_trading(self, date = None, day_start = 0, day_end = 235959):
+    def is_trading(self, date = None, day_start = None, day_end = None):
         """
         calculates if we are within a trading session 
 
@@ -375,7 +392,8 @@ class Calendar(Dict, _calendar):
             are we within a trading session
         """
         tod = as_time(date)
-        day_start = as_time(day_start); day_end = as_time(day_end)
+        day_start = _day_start(day_start)
+        day_end = _day_end(day_end)
         day = ymd(date)
         if day_end >= day_start:
             return tod <= day_end and tod >= day_start and self.is_bday(day)
@@ -387,7 +405,7 @@ class Calendar(Dict, _calendar):
             else:
                 return False
 
-    def trade_date(self, date = None, adj = None, day_start = 0, day_end = 235959):
+    def trade_date(self, date = None, adj = None, day_start = None, day_end = None):
         """
         This is very similar for adjust, but it also takes into account the time of the day.
         if day_start = 0 and day_end = 23:59:59 then this is exactly adjust.
@@ -438,7 +456,7 @@ class Calendar(Dict, _calendar):
         tod = as_time(date)
         day = ymd(date)
         adj = (adj or self.adj)[0].lower()
-        day_start = as_time(day_start); day_end = as_time(day_end)        
+        day_start = _day_start(day_start); day_end = _day_end(day_end)        
         if day_end >= day_start:
             res = self.adjust(day, adj)
             if tod > day_end: # post today trading session
@@ -498,6 +516,7 @@ class Calendar(Dict, _calendar):
         adj = adj or self.adj
         t = ymd(date)
         t = datetime.datetime(t.year, t.month, t.day)
+        
         if adj.startswith('f'):
             while self.is_holiday(t) and t <= self.t1:
                 t = t + DAY
@@ -598,6 +617,8 @@ class Calendar(Dict, _calendar):
         if day_start is None or day_end is None:
             return ts[[self.is_bday(date) for date in ts.index]]
         else:
+            day_start = _day_start(day_start)
+            day_end = _day_end(day_end)
             return ts[[self.is_trading(date, day_start = day_start, day_end = day_end) for date in ts.index]]
 
         
