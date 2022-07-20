@@ -11,9 +11,11 @@ from pyg_base._dates import ndt
 from pyg_base._sort import sort, cmp
 from pyg_base._file import read_csv
 from pyg_base._cache import cache
+from pyg_npy import pd_read_npy
 from functools import reduce
 import pandas as pd
 import re
+
 
 __all__ = ['dict_concat', 'dictable', 'is_dictable']
 
@@ -123,8 +125,14 @@ def _data_columns_as_dict(data, columns = None):
         if is_str(data):
             if data.endswith('.csv'):
                 data = read_csv(data)
-            elif 'xls' in data:
+            elif '.xls' in data:
                 data = dict(dictable.read_excel(data))
+            elif data.endswith('.parquet'):
+                data = pd.read_parquet(data)
+            elif data.endswith('.pickle'):
+                data = pd.read_pickle(data)
+            elif data.endswith('.npy'):
+                data = pd_read_npy(data)
             else:
                 return dict(data = data)
         if is_df(data):
