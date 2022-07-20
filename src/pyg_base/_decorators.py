@@ -4,6 +4,7 @@ from pyg_base._inspect import getargspec, getargs
 from pyg_base._dictattr import dictattr
 from copy import copy
 import datetime
+import time
 
 
 __all__ = ['wrapper', 'try_back', 'try_nan', 'try_none', 'try_zero', 'try_false', 'try_true', 'try_list', 'timer']
@@ -176,7 +177,7 @@ class try_back(wrapper):
             return self.function(*args, **kwargs)
         except Exception:
             return args[0] if len(args)>0 else kwargs[getargs(self.function)[0]]
-
+            
 
 class try_value(wrapper):
     """
@@ -203,15 +204,24 @@ class try_value(wrapper):
 
     
     """
-    def __init__(self, function = None, value = None, verbose = None):
-        super(try_value, self).__init__(function = function, value = value, verbose = verbose)
+    def __init__(self, function = None, repeat = 0, sleep = 0, return_value = True, value = None, verbose = None):
+        super(try_value, self).__init__(function = function, repeat = repeat, sleep = sleep, return_value = return_value, value = value, verbose = verbose)
     def wrapped(self, *args, **kwargs):
-        try: 
+        for i in range(self.repeat):
+            try: 
+                return self.function(*args, **kwargs)
+            except Exception:
+                if self.sleep:
+                    time.sleep(self.sleep)
+        if self.return_value:
+            try: 
+                return self.function(*args, **kwargs)
+            except Exception as e:
+                if self.verbose:
+                    logger.warning('WARN: %s' % e)
+                return copy(self.value)
+        else:
             return self.function(*args, **kwargs)
-        except Exception as e:
-            if self.verbose:
-                logger.warning('WARN: %s' % e)
-            return copy(self.value)
 
 try_nan = try_value(value = np.nan)
 try_zero = try_value(value = 0)
@@ -219,7 +229,6 @@ try_none = try_value
 try_true = try_value(value = True)
 try_false = try_value(value = False)
 try_list = try_value(value = [])
-
 
 def _str(value):
     """
