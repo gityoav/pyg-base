@@ -12,6 +12,8 @@ __all__ += ['nan2none', 'NoneType']
 __all__ = sorted(__all__)
 NoneType = type(None)
 
+
+
 def is_series(value):
     """ is value a pd.Series"""
     return isinstance(value, pd.Series)
@@ -41,7 +43,8 @@ def is_float(value):
 
 def is_num(value):
     """ is _int(value) or is_float(value)"""
-    return is_int(value) or is_float(value)
+    return isinstance(value, (int, np.int64, np.int32, np.int16, np.int8, 
+                              float, np.float16, np.float32, np.float64))
 
 def is_bool(value):
     """ is value a Bool, or a np.bool_ type"""
@@ -153,3 +156,48 @@ is_iterables = partial(is_one_or_many, check = is_iterable)
 is_tss = partial(is_one_or_many, check = is_ts) 
 
 is_tuples = partial(is_one_or_many, check = is_tuple) 
+
+
+
+def _list_instances(value, types):
+    if callable(types) and not isinstance(types, type):
+        if types(value):        
+            return [value]
+    elif isinstance(value, types):
+        return [value]
+    if isinstance(value, (list,tuple)):
+        return sum([_list_instances(v, types) for v in value],[])
+    elif isinstance(value, dict):
+        return sum([_list_instances(v, types) for v in value.values()],[])    
+    return []
+
+_instances = {is_series: pd.Series, 
+              is_df: pd.DataFrame,
+              is_pd: (pd.Series, pd.DataFrame),
+              int : (int, np.int64, np.int32, np.int16, np.int8),
+              float :  (float, np.float16, np.float32, np.float64),
+              is_num: (int, np.int64, np.int32, np.int16, np.int8) + (float, np.float16, np.float32, np.float64),
+              bool : (bool, np.bool_),
+              str: (str, np.str_),
+              is_date:  (datetime.date, datetime.datetime, np.datetime64)
+              }
+
+def list_instances(value, types):
+    """
+    returns a list of values within value that are of type "types"
+    
+    :Example:
+    ---------
+    
+    >>> value = dict(a = 1, b = ['a', 2], c = (dict(d = 4, e = 5.5), 'string'))
+    >>> assert list_instances(value, int) == [1,2,4]
+    >>> assert list_instances(value, str) == ['a', 'string']
+    >>> assert list_instances(value, float) == [5.5]
+    >>> assert list_instances(value, is_num) == [1,2,4,5.5]
+    
+    >>> value = dict(a = 1, b = np.nan)
+    >>> assert list_instances(value, types = is_nan) == [np.nan]
+    
+    """
+    types = _instances.get(types, types)
+    return _list_instances(value, types)
