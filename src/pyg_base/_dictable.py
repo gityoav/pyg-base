@@ -16,6 +16,7 @@ from functools import reduce
 import pandas as pd
 import re
 
+Pattern = type(re.compile('')) ## this types definition moves across re. versions
 
 __all__ = ['dict_concat', 'dictable', 'is_dictable']
 
@@ -460,7 +461,7 @@ class dictable(Dict):
                 res = res[[r is None for r in res[key]]]
             elif is_nan(value):
                 res = res[[is_nan(r) for r in res[key]]]
-            elif isinstance(value, re.Pattern):
+            elif isinstance(value, Pattern):
                 res = res[[is_str(r) and value.search(r) is not None for r in res[key]]]                
             else:
                 value = as_list(value)
@@ -516,7 +517,7 @@ class dictable(Dict):
                 res = res[[r is not None for r in res[key]]]
             elif is_nan(value):
                 res = res[[not is_nan(r) for r in res[key]]]
-            elif isinstance(value, re.Pattern):
+            elif isinstance(value, Pattern):
                 res = res[[(not is_str(r)) or value.search(r) is None for r in res[key]]]                
             else:
                 value = as_list(value)
