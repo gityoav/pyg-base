@@ -513,24 +513,23 @@ class Calendar(Dict, _calendar):
             nearby business day
 
         """
-        adj = adj or self.adj
+        adj = (adj or self.adj or 'm').lower()
         t = ymd(date)
         t = datetime.datetime(t.year, t.month, t.day)
         
         if adj.startswith('f'):
             while self.is_holiday(t) and t <= self.t1:
                 t = t + DAY
-            while t > self.t1 and t.weekay() in self.weekend:
+            while t > self.t1 and t.weekday() in self.weekend:
                 t = t + DAY
             return t
-                
         elif adj.startswith('p'):
             while self.is_holiday(t) and t >= self.t0:
                 t = t - DAY
-            while t < self.t0 and t.weekay() in self.weekend:
+            while t < self.t0 and t.weekday() in self.weekend:
                 t = t - DAY
             return t
-        elif adj.startswith('m'):
+        elif adj.startswith('m'): #modified following
             t = self.adjust(date, 'f')
             if t.month!=date.month:
                 return self.adjust(date, 'p')

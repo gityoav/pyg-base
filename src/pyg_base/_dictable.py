@@ -11,6 +11,7 @@ from pyg_base._dates import ndt
 from pyg_base._sort import sort, cmp
 from pyg_base._file import read_csv
 from pyg_base._cache import cache
+from pyg_base._logger import logger
 from pyg_npy import pd_read_npy
 from functools import reduce
 import pandas as pd
@@ -22,7 +23,7 @@ __all__ = ['dict_concat', 'dictable', 'is_dictable']
 
 @cache
 def _print_cols(*lcols):
-    print('inner joining on %s. To stop message, specify columns explicitly in the join'%list(lcols))
+    logger.info('inner joining on %s. To stop message, specify columns explicitly in the join'%list(lcols))
 
     
 def nan2none(v):
