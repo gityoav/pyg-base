@@ -133,6 +133,11 @@ def _data_columns_as_dict(data, columns = None):
                 data = pd.read_parquet(data)
             elif data.endswith('.pickle'):
                 data = pd.read_pickle(data)
+            elif data.endswith('.dictable'):
+                try:
+                    data = pd.read_pickle(data)
+                except Exception:
+                    data = pd.read_parquet(data)
             elif data.endswith('.npy'):
                 data = pd_read_npy(data)
             else:
