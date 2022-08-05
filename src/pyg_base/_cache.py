@@ -7,7 +7,10 @@ def _prehash(value):
     if isinstance(value, (tuple,list)):
         return tuple([_prehash(v) for v in value])
     elif isinstance(value, dict):
-        return tuple(sorted([(k, _prehash(v)) for k, v in value.items()]))
+        try:
+            return tuple(sorted([(k, _prehash(v)) for k, v in value.items()]))
+        except TypeError:
+            return tuple([(k, _prehash(v)) for k, v in value.items()])
     else:
         return value
 
