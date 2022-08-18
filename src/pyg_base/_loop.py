@@ -52,6 +52,8 @@ def _item_by_key(value, key, keys, i = None):
         return value[key] 
     elif isinstance(value, pd.DataFrame) and sorted(value.columns) == sorted(keys):
         return value[key]
+    elif isinstance(value, pd.DataFrame) and sorted(value.index) == sorted(keys):
+        return value.loc[key]
     elif is_array(value) and len(value.shape):
         if len(value.shape) == 2 and value.shape[1] == len(keys) and i is not None:
             return value.T[i]
@@ -157,8 +159,16 @@ class loops(wrapper):
     
     >>> a = pd.DataFrame(dict(x=[1,1],y=[2,2])); a.index = [5,10]
     >>> res =  f(a,[3,4])
-    >>> assert np.all( res == pd.DataFrame(dict(x=[4,4],y=[6,6]), index = [5,10]))    
+    >>> assert np.all( res == pd.DataFrame(dict(x=[4,4],y=[6,6]), index = [5,10]))   
     
+    >>> from pyg import * 
+    >>> @loop_all
+    >>> def f(x, y, col):
+    >>>     return x * y[col]
+    >>> x = dict(a = 1, b = 2)
+    >>> y = pd.DataFrame(dict(col1 = [1,2], col2 = [3,4]), index = ['a', 'b'])
+    >>> assert f(x, y, 'col1') == dict(a = 1, b = 4)
+    >>> assert f(x, y, 'col2') == dict(a = 3, b = 8)
     
     """
 
