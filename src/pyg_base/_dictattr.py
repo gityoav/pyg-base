@@ -315,3 +315,53 @@ def relabel(keys, *args, **relabels):
         res = {key : new_key  for key, new_key in zip(keys, args)}
     res.update(relabels)
     return res
+
+
+def getattrs(obj, attrs = None, base = None, *default):
+    """
+    converts obj into a dict with the attributes specified
+
+    Parameters
+    ----------
+    obj : object
+        object.
+
+    attrs : str/list, optional
+        list of attributes.
+
+    base : None, True, type, existing dict, optional
+        "what to start with" before adding attributes
+        base = True, use object __dict__ method to grab a base dict
+        base = '_' or '__': start with obj.__dict__ but exclude hidden attributes
+        base = dict-like: start with that object
+        base = dict-like-type: start with an empty dict of that type
+        base = None: start with an empty dictattr()
+        
+    *default : default
+        default for getattr if provided
+
+    Returns
+    -------
+    res : dict
+        dict with keys matching attributes of the original object.
+
+    """
+    if base is None:
+        res = dictattr()
+    elif base in [True, '_', '__']:
+        res = obj.__dict__
+        if not isinstance(res, dict) and callable(res):
+            res = res()
+        if base in ['_', '__']:
+            res = type(res)({key : value for key, value in res.items() if not key.startswith(base)})
+        res = dictattr(res)
+    elif isinstance(base, type):
+        res = base()
+    elif isinstance(base, dict):
+        res = base.copy()
+    for attr in as_list(attrs):
+        if len(default):
+            res[attr] = getattr(obj, attr, default[0])
+        else:
+            res[attr] = getattr(obj, attr)
+    return res
