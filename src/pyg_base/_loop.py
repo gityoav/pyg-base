@@ -1,8 +1,8 @@
 import pandas as pd; import numpy as np
-from pyg_base._inspect import getargs, getcallarg
+from pyg_base._inspect import getargs, getcallarg, getcallargs, getargspec, call_with_callargs
 from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_arr, is_array, is_tuple, is_dict
 from pyg_base._decorators import wrapper
-from pyg_base._as_list import as_tuple
+from pyg_base._as_list import as_tuple, as_list
 
 __all__ = ['loop', 'loops', 'len0', 'pd2np', 'shape', 'loop_all']
 
@@ -413,3 +413,87 @@ class skip_if_data_pd_or_np(wrapper):
             return pd.concat([data,res]).sort_index()
         return res_df
 
+def _getitem(value, param, strict = False):
+    if isinstance(value, dict) and param in value.keys():
+        return value[param]
+    elif isinstance(value, pd.Series) and param in value.index:
+        return value[param]
+    elif isinstance(value, pd.DataFrame) and param in value.columns:
+        return value[param]
+    elif isinstance(value, pd.DataFrame) and param in value.index:
+        return value.loc[param]
+    else:
+        if strict and isinstance(value, (pd.Series, pd.DataFrame, dict)):
+            raise ValueError('could not find parameter %s in %s'%(param, value))
+        else:
+            return value
+
+class grab_parameter_from_dict(wrapper):
+    """
+    allows the function to provide a "data factory" for a function.
+    
+    
+    Example
+    -------
+    >>> @grab_parameter_from_dict
+    >>> def f(a,b):
+    >>>     return a+b
+    
+    >>> data_factory = dict(a = 1, b = 2)
+    >>> assert f(a = data_factory, b = data_factory) == 3
+    
+    >>> data_factory = pd.Series(dict(a = 10, b = 20))
+    >>> assert f(a = data_factory, b = data_factory) == 30
+    
+    :Example: being specific about what parameters are converted
+    ---------    
+    
+    >>> @grab_parameter_from_dict(parameters = 'a') # convert just 'a'
+    >>> def f(a,b):
+    >>>     return a+b
+
+    >>> data_factory = pd.Series(dict(a = 10, b = 20))
+    >>> assert eq(f(a = data_factory, b = data_factory), data_factory['a'] + data_factory)
+    
+    ### From example, we see that there may be ambiguity on using the factory and conversion...
+    
+    :Example: being strict about which parameters are converted
+    --------
+    >>> @grab_parameter_from_dict(parameters = 'a', strict = False) # convert just 'a'
+    >>> def f(a,b):
+    >>>     return a+b
+    
+    >>> bad_data_factory = pd.Series(dict(c = 20))
+    >>> f(a = bad_data_factory, b = 5) = bad_data_factory + 5
+    >>> ## This is a problem, as 'a' should have converted to a value
+    
+    >>> @grab_parameter_from_dict(parameters = 'a', strict = True) # convert just 'a', be strict
+    >>> def f(a,b):
+    >>>     return a+b
+    
+    >>> import pytest
+    >>> with pytest.raises(ValueError):
+    >>>     f(a = bad_data_factory, b = 5)
+
+    >>> assert f(a = 3, b = 5) == 8
+    >>> #This is still OK as 'a' is not a type dict/pd.Series or pd.DataFrame
+    
+    """
+    
+    def __init__(self, function = None, parameters = None, strict = None):
+        if strict is None:
+            strict = False if parameters is None else True
+        super(grab_parameter_from_dict, self).__init__(function = function, parameters = parameters, strict = strict)
+
+    def wrapped(self, *args, **kwargs):
+        spec = getargspec(self.function)
+        callargs = getcallargs(self.function, *args, **kwargs)
+        strict = self.strict
+        if self.parameters is None:
+            callargs = {param: value if param == spec.varargs else _getitem(value, param, strict = strict) for param, value in callargs.items()}
+            result = call_with_callargs(self.function, callargs)
+        else:
+            parameters = as_list(self.parameters)       
+            callargs = {param: _getitem(value, param, strict = strict) if param in parameters else value for param, value in callargs.items()}
+            result = call_with_callargs(self.function, callargs)
+        return result
