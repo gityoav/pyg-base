@@ -477,12 +477,27 @@ class grab_parameter_from_dict(wrapper):
 
     >>> assert f(a = 3, b = 5) == 8
     >>> #This is still OK as 'a' is not a type dict/pd.Series or pd.DataFrame
+
+    :Example: remapping the parameters
+    ---------
+    >>> @grab_parameter_from_dict(a = 'fancy_name') # convert just 'a' using 'fancy_name' in data factory
+    >>> def f(a,b):
+    >>>     return a+b
+    >>>
+    >>> factory = dict(fancy_name = 4)
+    >>> assert f(a = factory, b = 3) == 7
     
     """
     
-    def __init__(self, function = None, parameters = None, strict = None):
+    def __init__(self, function = None, parameters = None, strict = None, **kwargs):
         if strict is None:
             strict = False if parameters is None else True
+        if isinstance(parameters, (list, str)):
+            parameters = as_list(parameters)
+            parameters = dict(zip(parameters, parameters))
+        if kwargs:
+            parameters = parameters or {}
+            parameters.update(kwargs)
         super(grab_parameter_from_dict, self).__init__(function = function, parameters = parameters, strict = strict)
 
     def wrapped(self, *args, **kwargs):
@@ -493,7 +508,7 @@ class grab_parameter_from_dict(wrapper):
             callargs = {param: value if param == spec.varargs else _getitem(value, param, strict = strict) for param, value in callargs.items()}
             result = call_with_callargs(self.function, callargs)
         else:
-            parameters = as_list(self.parameters)       
-            callargs = {param: _getitem(value, param, strict = strict) if param in parameters else value for param, value in callargs.items()}
+            parameters = self.parameters
+            callargs = {param: _getitem(value, parameters[param], strict = strict) if param in parameters else value for param, value in callargs.items()}
             result = call_with_callargs(self.function, callargs)
         return result
