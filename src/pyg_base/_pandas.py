@@ -266,7 +266,7 @@ def df_fillna(df, method = None, axis = 0, limit = None):
     return _df_fillna(df, method = method, axis = axis, limit = limit)
 
 @loop(dict, list, tuple)
-def _nona(df, value = np.nan):
+def _nona(df, value = np.nan, edge = None):
     if np.isnan(value):
         mask = np.isnan(df)
     elif np.isinf(value):
@@ -275,9 +275,16 @@ def _nona(df, value = np.nan):
         mask = df == value
     while len(mask.shape) > 1:
         mask = mask.min(axis = 1)
-    return df[~mask]
+    res = df[~mask]
+    if edge is None or len(res) == 0 or not is_pd(df):
+        return res
+    elif edge == 1: ## cut only latest values
+        return df_slice(df, ub = res.index[-1], openclose = '[]')
+    elif edge == -1: ## cut only historic values
+        return df_slice(df, lb = res.index[0], openclose = '[]')
+    
 
-def nona(a, value = np.nan):
+def nona(a, value = np.nan, edge = None):
     """
     removes rows that are entirely nan (or a specific other value)
 
@@ -288,12 +295,20 @@ def nona(a, value = np.nan):
     value : float, optional
         value to be removed. The default is np.nan.
         
+    edge: None/1/-1
+        remove all nans/remove latest nan only/remove historic nan only
+        
     :Example:
     ----------
     >>> from pyg import *
     >>> a = np.array([1,np.nan,2,3])
     >>> assert eq(nona(a), np.array([1,2,3]))
+    >>> assert eq(nona(a, edge = 1), a)
 
+    >>> df = pd.Series([np.nan,1,np.nan,2,3,np.nan])
+    >>> assert eq(nona(df, edge = 1), pd.Series([np.nan,1,np.nan,2,3]))
+    >>> assert eq(nona(df, edge = -1), pd.Series([1,np.nan,2,3,np.nan], range(1,6)))
+    
     :Example: multiple columns
     ---------------------------
     >>> a = np.array([[1,np.nan,2,np.nan], [np.nan, np.nan, np.nan, 3]]).T 
@@ -302,7 +317,7 @@ def nona(a, value = np.nan):
 
 
     """
-    return _nona(a)
+    return _nona(a, value = value, edge = edge)
 
 
 @loop(list, tuple, dict)
