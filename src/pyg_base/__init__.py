@@ -25,7 +25,7 @@ from pyg_base._tree import is_tree, tree_to_table
 from pyg_base._tree_repr import tree_repr
 from pyg_base._txt import alphabet, ALPHABET, f12, as_ascii, replace, relabel_lower, lower, upper, proper, strip, split, capitalize, common_prefix, deprefix
 from pyg_base._types import is_pd, is_arr, is_int, is_float, is_num, is_bool, is_str, is_nan, \
-    is_none, is_dict, is_iterable, is_date, is_df, is_series, is_ts, is_list, is_tuple,\
+    is_none, is_dict, is_iterable, is_date, is_df, is_series, is_ts, is_list, is_tuple, is_primitive, \
     is_pds, is_arrs, is_ints, is_floats, is_nums, is_len, is_bools, is_strs, is_nans, is_nones, is_dicts, is_zero_len, \
     is_iterables, is_tss, nan2none, NoneType, is_dates, is_lists, list_instances
 from pyg_base._ulist import ulist, rng
