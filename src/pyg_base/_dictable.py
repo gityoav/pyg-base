@@ -346,7 +346,7 @@ class dictable(Dict):
             elif is_strs(item):
                 return type(self)(super(dictable, self).__getitem__(item))
             elif is_bools(item):
-                res = type(self)([row for row, tf in zipper(self, item) if tf])
+                res = type(self)([row for row, tf in zipper(list(self), item) if tf])
                 return res if len(res) else type(self)([], self.keys())
             elif is_ints(item):
                 values = list(zip(*self.values()))
@@ -506,7 +506,7 @@ class dictable(Dict):
         >>> from pyg import *; import numpy as np
         >>> d = dictable(x = [1,2,3,np.nan], y = [0,4,3,5])
         >>> assert d.exc(lambda x,y: x>y) == dictable(x = 1, y = 0)
-
+        
         """
         res = self.copy()
         if len(functions) + len(filters) == 0:
@@ -519,6 +519,7 @@ class dictable(Dict):
                 f = kwargs_support(function)
                 res = type(self)([row for row in res if not f(**row)])
         for key, value in filters.items():
+            pass
             if value is None:
                 res = res[[r is not None for r in res[key]]]
             elif is_nan(value):
