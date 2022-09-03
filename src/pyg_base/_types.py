@@ -3,16 +3,21 @@ import numpy as np
 from _collections_abc import Iterable, dict_keys, dict_values
 import datetime
 from functools import partial
+import re
 
 from pyg_base._logger import logger
 
-__all__ = ['is_series', 'is_df', 'is_pd', 'is_arr', 'is_list', 'is_len', 'is_tuple', 'is_int', 'is_float', 'is_num', 'is_bool', 'is_str', 'is_nan', 'is_none', 'is_dict', 'is_iterable', 'is_date', 'is_ts']
+__all__ = ['is_regex', 'is_series', 'is_df', 'is_pd', 'is_arr', 'is_list', 'is_len', 'is_tuple', 'is_int', 'is_float', 'is_num', 'is_bool', 'is_str', 'is_nan', 'is_none', 'is_dict', 'is_iterable', 'is_date', 'is_ts']
 __all__ += ['is_pds', 'is_arrs', 'is_ints', 'is_floats', 'is_nums', 'is_bools', 'is_strs', 'is_nans', 'is_nones', 'is_dicts', 'is_iterables', 'is_dates', 'is_tss', 'is_lists', 'is_tuples']
 __all__ += ['nan2none', 'NoneType']
 __all__ = sorted(__all__)
 NoneType = type(None)
+Pattern = type(re.compile(''))
 
 
+def is_regex(value):
+    """ is value a re.compile() pattern"""
+    return isinstance(value, Pattern)
 
 def is_series(value):
     """ is value a pd.Series"""
