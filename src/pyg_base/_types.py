@@ -4,6 +4,7 @@ from _collections_abc import Iterable, dict_keys, dict_values
 import datetime
 from functools import partial
 import re
+from enum import Enum
 
 from pyg_base._logger import logger
 
@@ -18,6 +19,11 @@ Pattern = type(re.compile(''))
 def is_regex(value):
     """ is value a re.compile() pattern"""
     return isinstance(value, Pattern)
+
+_primitives =  (int, np.int64, np.int32, np.int16, np.int8, float, np.float16, np.float32, np.float64, bool, np.bool_, str, np.str_, Enum, datetime.date, datetime.datetime, np.datetime64) 
+                
+def is_primitive(value):
+    value is None or isinstance(value, _primitives)
 
 def is_series(value):
     """ is value a pd.Series"""
