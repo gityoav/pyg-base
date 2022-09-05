@@ -30,7 +30,7 @@ def mkdir(path):
     return path
 
 def cfg_read():
-    for path in [CFG, _backup]:
+    for path in CFG.split(',') + [_backup]:
         if os.path.isfile(path):
             with open(path, 'r') as f:
                 cfg = json.load(f)
@@ -42,12 +42,13 @@ cfg_read.__doc__ = 'reads the config file from %s' % CFG
 
 
 def cfg_write(cfg):
-    try:
-        with open(mkdir(CFG), 'w') as f:
-            json.dump(cfg, f)
-    except Exception:
-        with open(mkdir(_backup), 'w') as f:
-            json.dump(cfg, f)
+    for path in CFG.split(',') + [_backup]:
+        try:
+            with open(mkdir(path), 'w') as f:
+                json.dump(cfg, f)
+            return
+        except Exception:
+            pass
         
 cfg_write.__doc__ = 'writes the config file provided to %s' % CFG
     
