@@ -1,10 +1,12 @@
 import numpy as np
 from pyg_base._logger import logger
-from pyg_base._inspect import getargspec, getargs
+from pyg_base._inspect import getargspec, getargs, argspec_add
 from pyg_base._dictattr import dictattr
+from pyg_base._as_list import as_list
 from copy import copy
 import datetime
 import time
+from inspect import FullArgSpec
 
 
 __all__ = ['wrapper', 'try_back', 'try_nan', 'try_none', 'try_zero', 'try_false', 'try_true', 'try_list', 'timer']
@@ -323,4 +325,53 @@ class kwargs_support(wrapper):
         return self.function(*args, **kwargs)
  
 
+class kwpartial(wrapper):
+    """
+    One of the problems of functions with kwargs support is that dictable does not 
+    know what parameters to present to it.
+    
+    >>> from pyg import *
+    >>> f = lambda **kwargs: len(kwargs)
+    >>> assert Dict(a = 1, b = 2)[f] == 0 ## no parameters are presented to f
+
+    kwpartial acts as a partial function, but it also able to specify what kw are presented to it...
         
+    >>> f = lambda a, b, c=1, **kwargs: len(kwargs)
+    >>> self = kwpartial(f, kw = ['x', 'y'], b = 1, c = 2, z = 4)
+    >>> assert self(a = 1) == 1 # just z is in kwargs
+    >>> d = Dict(a = 1, x = 2)
+    >>> assert d[self] == 2 # z and x
+    >>> d = Dict(a = 1, x = 2, w = 0)
+    >>> assert d[self] == 2 # z and x
+    >>> d = Dict(a = 1, x = 2, w = 0, y=3)
+    >>> assert d[self] == 3 # z and x and y are presented
+
+    """
+    def __init__(self, function = None, kw = None, **keywords):
+        argspec = getargspec(function)
+        if argspec.varkw is None:
+            raise ValueError('kwpartial only supports function with **kwargs support')
+        if argspec.varargs is not None:
+            raise ValueError('kwpartial only support *args-less function, but function has *%s'%argspec.varargs)
+        super(kwpartial, self).__init__(function = function, keywords = keywords, kw = kw)
+
+    @property
+    def fullargspec(self):
+        spec = getargspec(self.function)
+        args = [a for a in as_list(self.kw) if a not in spec.args] 
+        if len(args) == 0:
+            return spec
+        else:
+            return FullArgSpec(args=args + spec.args, 
+                               varargs=spec.varargs, varkw=spec.varkw, defaults=spec.defaults, 
+                               kwonlyargs=spec.kwonlyargs, 
+                               kwonlydefaults=spec.kwonlydefaults, 
+                               annotations=spec.annotations)
+    
+    def wrapped(self, *args, **kwargs):
+        kwargs.update(self.keywords)
+        return self.function(*args, **kwargs)
+
+
+ 
+    
