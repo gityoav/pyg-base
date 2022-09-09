@@ -21,8 +21,8 @@ def _max(*values):
     else:
         return max(values)
 
-def df_roll_off(chain, loader,load_on = None,transform = None,
-            roll = 'roll', expiry = '-1m', n = 1, data = None, cutoff = '-1b'):
+def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None,
+            roll = 'roll', expiry = '-1m', n = 1, data = None, cutoff = '-2b', do_if_no_n = True):
     """
     
     Creates a single timeseries from multiple timeseries data, 
@@ -38,6 +38,9 @@ def df_roll_off(chain, loader,load_on = None,transform = None,
         columns to use when loading. The default is None.
     transform : callable, optional
         a transform to apply to the data. The default is None.
+    live_check: callable, optional
+        for data that is considered "live", i.e. it is data post cutoff date,
+        you can apply additional transforms that are usually associated with checks that data is available
     roll: str, optional
         the column used to determine roll. The default is 'roll'.
     expiry : str/int, optional
@@ -48,6 +51,9 @@ def df_roll_off(chain, loader,load_on = None,transform = None,
         The rolled timeseries, previously calculated . The default is None.
     cutoff : str/int, optional
         old data will be used up to that relative date
+    do_if_no_n: bool/callable
+        We want to ensure that we have data available post the cutoff. 
+        We need n timeseries. if we have less, we can choose to raise, or to call a function
 
     Returns
     -------
@@ -177,9 +183,18 @@ def df_roll_off(chain, loader,load_on = None,transform = None,
             else:
                 loaded = loader(**row[load_on])
             if (roll_date is None or roll_date >= now) and loaded is not None and len(loaded) > 0 and (data_cutoff is None or loaded.index[-1] > data_cutoff):
+                if live_check is not None:
+                    for check in as_list(live_check):
+                        loaded = check(loaded)
                 i = i + 1
         loaded_data.append(loaded)
         j = j + 1
+    if i < n:
+        if do_if_no_n is True:
+            raise ValueError(f'there are only {i} dataseries available post cutoff and {n} are required')
+        elif callable(do_if_no_n):
+            return do_if_no_n(i, n)
+
     if j < size:
         loaded_data.extend([None] * (size - j))
     chain[_data] = loaded_data

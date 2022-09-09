@@ -11,7 +11,7 @@ We then need to worry about multiple columns if there are. If none, each timeser
 If there are multiple columns, we will perform the calculations columns by columns. 
 
 """
-from pyg_base._types import is_df, is_str, is_num, is_series, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
+from pyg_base._types import is_df, is_str, is_num, is_ts, is_series, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
@@ -19,6 +19,7 @@ from pyg_base._reducer import reducing, reducer
 from pyg_base._decorators import  wrapper
 from pyg_base._loop import loop
 from pyg_base._dates import dt
+from pyg_base._txt import lower
 import pandas as pd
 import numpy as np
 from copy import copy
@@ -1416,3 +1417,96 @@ def df_unslice(df, ub):
     rs = dictable.concat(res.rs).listby('u').do([pd.concat, nona], 'ts')
     return dict(rs['u', 'ts'])
 
+
+def ts_gap(ts, gap = 'days'):
+    """
+    Calculate the gap going FORWARD in time. The last gap is measured against today
+    
+    Example
+    --------
+    >>> ts = pd.Series(0, drange(-100,-10, '1b'))
+    >>> gaps = ts_gap(ts)
+    >>> gaps
+    
+    2022-06-01     1
+    2022-06-02     1
+    2022-06-03     3
+    2022-06-06     1
+    2022-06-07     1
+                  ..
+    2022-08-24     1
+    2022-08-25     1
+    2022-08-26     3
+    2022-08-29     1
+    2022-08-30    10
+    Length: 65, dtype: int64
+
+    >>> assert gaps.iloc[-1] == 10
+    
+    """
+    if len(ts) == 0:
+        return pd.Series([],[])
+    if is_ts(ts):
+        ts = ts.index
+    if gap == 'days':
+        days = [(t1-t0).days for t0, t1 in zip(ts[:-1], ts[1:])]
+        now = dt(0)
+        if ts[-1] <= now:
+            days.append((dt(0) - ts[-1]).days)
+        else:
+            days.append(min(days))
+        return pd.Series(days, index = ts)
+    else:
+        raise ValueError(f'pyg_base.ts_gap with gap={gap} not supported')
+
+def ts_deal_with_issue(ts, issue_calc, issue_level = 0, deal = 'last'):
+    """
+    Detects an issue and then deal with it
+    
+    Parameters
+    ----------
+    
+    
+    """
+    if not issue_level:
+        return ts
+    issue = issue_calc(ts)
+    issues = issue[issue >= issue_level]
+    if len(issues) == 0:
+        return ts
+    do = lower(deal)
+    if is_str(do) and do == 'last': ## I just want to keep the last data which is good
+        return df_slice(ts, issues.index[-1]) 
+    elif is_str(do) and do == 'no_first': ## happy to keep 
+        return df_slice(ts, issues.index[0]) 
+    elif is_int(do): ## this is used to pick which section of the data you want, more general than 'last' and 'no_first'
+        if len(issues) < max(-do, do+1):
+            return ts
+        else:
+            return df_slice(ts, issues.index[do]) ## do = -1 === 'last', do = 0 == 'no_first' 
+    elif is_str(do) and do == 'raise':
+        raise ValueError(f'Found these issues {issues} at issue level >= {issue_level} with timeseries')
+    else:
+        raise ValueError(f'no idea how to deal with issues {issues} using {deal}')
+
+def ts_degap(ts, max_gap = 0, deal = 'last'):
+    """
+    Parameters
+    ----------
+    ts : timeseries
+        timeseries.
+    max_gap : int, optional
+        False, None or 0: don't do anything    
+        Otherwise, anything over max_gap is defined as an issue. The default is 0, which actually means: do.
+    deal : str, int, optional
+        See 'ts_deal_with_issue' for range of options. The default is 'last', keeping the last segment of the data with no gaps
+
+    Returns
+    -------
+    timeseries
+        a timeseries with gap issues handled
+
+    """
+    
+    return ts_deal_with_issue(ts, issue_calc = ts_gap, issue_level = max_gap, deal = deal)
+    
