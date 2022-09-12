@@ -60,6 +60,7 @@ def cfg_write(cfg):
                 return
             except Exception:
                 pass
+    CACHE['CFG'] = cfg
    
 cfg_write.__doc__ = f'writes the config file provided to {CFG}' 
     
