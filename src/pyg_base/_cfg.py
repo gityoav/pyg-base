@@ -1,7 +1,6 @@
 import os
 import json
-CFG = os.environ.get('PYG_CFG', 'e:/etc/pyg.json')
-_backup = 'c:/etc/pyg.json'
+CFG = os.environ.get('PYG_CFG', 'c:/etc/pyg.json')
 
 def mkdir(path):
     """
@@ -29,27 +28,38 @@ def mkdir(path):
                 os.mkdir(d)
     return path
 
-def cfg_read():
-    for path in CFG.split(',') + [_backup]:
-        if os.path.isfile(path):
-            with open(path, 'r') as f:
-                cfg = json.load(f)
-            return cfg
-    else:
-        return {}
-cfg_read.__doc__ = 'reads the config file from %s' % CFG
+CACHE = {}
 
+def get_cache(*args):
+    res = CACHE
+    for arg in args:
+        if arg not in res:
+            res[arg] = {}
+        res = res[arg]
+    return res
+
+def cfg_read():
+    cfg = CACHE.get('CFG', {})
+    if isinstance(CFG, str):
+        for path in CFG.split(','):
+            if os.path.isfile(path):
+                with open(path, 'r') as f:
+                    cfg.update(json.load(f))
+    CACHE['CFG'] = cfg
+    return cfg
+
+cfg_read.__doc__ = f'reads the config from get_cache("CFG") and updates it from files in {CFG}'
 
 
 def cfg_write(cfg):
-    for path in CFG.split(',') + [_backup]:
-        try:
-            with open(mkdir(path), 'w') as f:
-                json.dump(cfg, f)
-            return
-        except Exception:
-            pass
-        
-cfg_write.__doc__ = 'writes the config file provided to %s' % CFG
+    if CFG is not None:
+        for path in CFG.split(','):
+            try:
+                with open(mkdir(path), 'w') as f:
+                    json.dump(cfg, f)
+                return
+            except Exception:
+                pass
+   
+cfg_write.__doc__ = f'writes the config file provided to {CFG}' 
     
-
