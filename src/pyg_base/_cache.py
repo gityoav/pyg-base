@@ -14,15 +14,7 @@ def _prehash(value):
     else:
         return value
 
-CACHE = {}
 
-def get_cache(*args):
-    res = CACHE
-    for arg in args:
-        if arg not in res:
-            res[arg] = {}
-        res = res[arg]
-    return res
 
 def _hash(value):
     value = _prehash(value)
@@ -61,28 +53,6 @@ class cache_func(wrapper):
         return self
     
 
-# class cache_method(wrapper):
-#     @property
-#     def name(self):
-#         return self.function.__name__
-    
-#     def _key(self, *args, **kwargs):
-#         return _prehash((self.name, args[1:], kwargs))
-
-#     def wrapped(self, *args, **kwargs):
-#         key = self._key(*args, **kwargs)
-#         me = args[0]
-#         try:
-#             me.cache = getattr(me, _cache, {})
-#             if key not in me.cache:
-#                 me.cache[key] = self.function(*args, **kwargs)
-#             return me.cache[key]
-#         except Exception:
-#             return self.function(*args, **kwargs)
-        
-#     def clear_cache(self):
-#         self.cache = {}
-#         return self
 
 def cache(function):
     """
