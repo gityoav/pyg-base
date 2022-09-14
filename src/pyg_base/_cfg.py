@@ -1,6 +1,6 @@
 import os
 import json
-CFG = os.environ.get('PYG_CFG', 'c:/etc/pyg.json')
+CFG = os.environ.get('PYG_CFG')
 
 def mkdir(path):
     """
@@ -45,13 +45,14 @@ def cfg_read():
             if os.path.isfile(path):
                 with open(path, 'r') as f:
                     cfg.update(json.load(f))
-    CACHE['CFG'] = cfg
+                    CACHE['CFG'] = cfg
     return cfg
 
 cfg_read.__doc__ = f'reads the config from get_cache("CFG") and updates it from files in {CFG}'
 
 
 def cfg_write(cfg):
+    CACHE['CFG'] = cfg
     if CFG is not None:
         for path in CFG.split(','):
             try:
@@ -60,7 +61,6 @@ def cfg_write(cfg):
                 return
             except Exception:
                 pass
-    CACHE['CFG'] = cfg
    
 cfg_write.__doc__ = f'writes the config file provided to {CFG}' 
     
