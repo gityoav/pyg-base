@@ -6,7 +6,6 @@ base contains a range of various utilities that help quick research.
 
 * date functions: dt, drange, calendar
 * extending the Dict: ulist, Dict, named_dict, tree
-* graph calculations: cell
 * dictable
 * various decorators: try_none, loop(list), timer, etc.
 * zipper: a safer version of zip
