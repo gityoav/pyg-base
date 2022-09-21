@@ -1510,3 +1510,13 @@ def ts_degap(ts, max_gap = 0, deal = 'last'):
     
     return ts_deal_with_issue(ts, issue_calc = ts_gap, issue_level = max_gap, deal = deal)
     
+
+def df_drop_index_duplicates(df, keep = 'last'):
+    """
+    drop duplicates based on index alone
+    """
+    ts = pd.Series(df.index)
+    ts = ts.drop_duplicates(keep = keep)
+    return df.iloc[ts.index]
+
+    

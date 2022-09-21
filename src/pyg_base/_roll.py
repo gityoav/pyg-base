@@ -131,6 +131,23 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
              ...   ...   ...   ...
     2022-09-05  45.0  46.0  47.0  48.0
     2022-09-06  45.0  46.0  47.0  48.0
+    
+    Example: cutoff behaviour
+    --------
+    >>> from pyg import *
+    >>> factory = dict(a = pd.Series(range(51), drange(-100,-50)),
+                   b = pd.Series(range(71), drange(-70,0)))
+    >>> chain = dictable(ticker = ['a', 'b'])
+    >>> loader = timer(lambda ticker: factory[ticker])
+
+    >>> ts = df_roll_off(chain = chain, loader = loader, n = 1).data
+    >>> assert ts.index[-1] == dt(0)
+
+    ## we now make 'a' go all the way, just past the cutoff
+    >>> alive_just_about = drange(-100,'-1b')
+    >>> factory['a'] = pd.Series(range(len(alive_just_about)), alive_just_about)
+    >>> ts = df_roll_off(chain = chain, loader = loader, n = 1).data
+    >>> assert ts.index[-1] == dt('-1b')
 
     """
     chain = dictable(chain)
@@ -147,13 +164,13 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
             data_ok = False
         elif data.shape[1] > n:
             data = data.iloc[:,:n]
+    if cutoff is not None:
+        cutoff = dt(cutoff)
     if data_ok:
         data_cutoff = data.index[-1]
-        if cutoff is not None:
-            cutoff = dt(cutoff)
-            if cutoff < data_cutoff:
-                data_cutoff = cutoff
-                data = df_slice(data, ub = data_cutoff, openclose = '[]')
+        if cutoff < data_cutoff:
+            data_cutoff = cutoff
+            data = df_slice(data, ub = data_cutoff, openclose = '[]')
     else:
         data_cutoff = None
 
@@ -182,7 +199,7 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
                 loaded = row[loader]
             else:
                 loaded = loader(**row[load_on])
-            if (roll_date is None or roll_date >= now) and loaded is not None and len(loaded) > 0 and (data_cutoff is None or loaded.index[-1] > data_cutoff):
+            if (roll_date is None or roll_date >= now) and loaded is not None and len(loaded) > 0 and (loaded.index[-1] >= (cutoff or now)):
                 if live_check is not None:
                     for check in as_list(live_check):
                         loaded = check(loaded)
