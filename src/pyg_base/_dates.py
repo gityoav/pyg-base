@@ -14,6 +14,8 @@ from pytz import country_timezones
 import pytz
 
 
+NaT = pd.NaT
+NaTType = type(NaT)
 TMIN = datetime.datetime(1900,1,1)
 TMAX = datetime.datetime(2300,1,1)
 microsecond = datetime.timedelta(microseconds = 1)
@@ -115,7 +117,7 @@ def tz_convert(t, tzinfo = None):
 
 def today(date = None):
     now = date or datetime.datetime.now()
-    return datetime.datetime(now.year, now.month, now.day)
+    return NaT if isinstance(date, NaTType) else datetime.datetime(now.year, now.month, now.day)
 
 
 def month(m):
@@ -278,6 +280,8 @@ def np2dt(t):
 def uk2dt(t, tzinfo = None):
     if t in ('', 'null'):
         return None
+    elif t in ('NaT'):
+        return NaT
     res = parser.parse(t)
     if ambiguity.search(t) is not None:
         if res.day<13:
@@ -292,6 +296,8 @@ def uk2dt(t, tzinfo = None):
 def us2dt(t, tzinfo = None):
     if t in ('', 'null'):
         return None
+    elif t in ('NaT'):
+        return NaT
     res = parser.parse(t)
     if ambiguity.search(t) is not None and res.month != int(t[:2].replace('-','').replace('/','')):
         raise ValueError('the date is not in US format')
@@ -327,6 +333,8 @@ def dt_bump(t, *bumps):
         res.index = [dt_bump(i, *bumps) for i in res.index]
         return res
     t = t if isinstance(t, datetime.datetime) else dt(t)
+    if isinstance(t, NaTType):
+        return NaT
     for bump in bumps:
         if is_int(bump):
             t = t + DAY * bump
@@ -444,6 +452,8 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     t = args[0]
     if isinstance(t, np.datetime64):
         t = tz_convert(np2dt(t), tzinfo)
+    elif isinstance(t, NaTType):
+        return NaT
     elif isinstance(t, datetime.date) and not isinstance(t, datetime.datetime):
         t = datetime.datetime(t.year, t.month, t.day, tzinfo = as_tz(tzinfo))
     if isinstance(t, datetime.datetime):
@@ -575,6 +585,8 @@ def dt2str(t, fmt = None):
     >>> assert dt2str(t) == '2000-01-10T20:30:40.000050'
     """
     t = t if isinstance(t, datetime.datetime) else dt(t)
+    if isinstance(t, NaTType):
+        return 'NaT'
     if fmt is None:
         if t == today(t):
             return t.strftime('%Y%m%d')
