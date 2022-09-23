@@ -1445,7 +1445,7 @@ def ts_gap(ts, gap = 'days'):
     
     """
     if len(ts) == 0:
-        return pd.Series([],[])
+        return ts
     if is_ts(ts):
         ts = ts.index
     if gap == 'days':
