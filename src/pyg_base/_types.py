@@ -94,6 +94,9 @@ def nan2none(value):
     """convert np.nan/np.inf to None"""
     return None if is_nan(value) else value
 
+def null2none(value):
+    return None if isinstance(value, _primitives) and pd.isnull(value) else value
+
 def is_list(value):
     """is value a list"""
     return isinstance(value, list)
