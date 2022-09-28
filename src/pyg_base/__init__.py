@@ -33,5 +33,6 @@ from pyg_base._ulist import ulist, rng
 from pyg_base._waiter import waiter, async_wrapper
 from pyg_base._zip import zipper, lens
 from pyg_base._roll import df_roll_off
+from pyg_base._xls import pd_to_excel
 from pyg_npy import np_save, pd_to_npy, pd_read_npy, path_name, path_dirname, path_join, mkdir
 

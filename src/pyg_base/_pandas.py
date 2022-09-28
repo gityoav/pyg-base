@@ -453,6 +453,9 @@ def df_reindex(ts, index = None, method = None, limit = None):
     return _df_reindex(ts, index = index, method = method, limit = limit)
 
 
+def _dtype(o):
+    return int if is_int(o) else float if is_num(o) else 'object' if o is None or is_str(o) else None
+
 def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, limit = None):
     """
     simple concatenator, 
@@ -514,7 +517,7 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
         if len(df_objs):
             res = pd.concat(df_objs, axis = axis, join = join)
             if len(df_objs) < len(objs):
-                df_objs = [o if is_pd(o) else pd.Series(o, res.index) for o in objs]
+                df_objs = [o if is_pd(o) else pd.Series(o, res.index, dtype = _dtype(o)) for o in objs]
                 res = pd.concat(df_objs, axis = axis, join = join)
         elif len(np_objs):
             ns = set([o.shape[0] for o in np_objs])
