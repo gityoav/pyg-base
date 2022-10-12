@@ -23,6 +23,7 @@ from pyg_base._perdictable import join, perdictable
 from pyg_base._reducer import reducer, reducing
 from pyg_base._roll import df_roll_off
 from pyg_base._sort import sort, cmp, Cmp
+from pyg_base._tenor import years_between, years_to_maturity
 from pyg_base._tree import is_tree, tree_to_table
 from pyg_base._tree_repr import tree_repr
 from pyg_base._txt import alphabet, ALPHABET, f12, as_ascii, replace, relabel_lower, lower, upper, proper, strip, split, capitalize, common_prefix, deprefix
