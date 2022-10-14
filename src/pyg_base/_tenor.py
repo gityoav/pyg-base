@@ -1,6 +1,6 @@
 import pandas as pd
 from pyg_base._dates import dt
-from pyg_base._types import is_date, is_ts, is_str
+from pyg_base._types import is_date, is_ts, is_str, is_num
 from pyg_base._pandas import df_reindex
 
 def years_between(t0, t1):
@@ -44,34 +44,36 @@ def years_to_maturity(maturity, ts = None):
     >>> assert years_to_maturity('730d') == 2
     >>> assert years_to_maturity('spot') == 0    
     """
-    if ts is None:
-        if isinstance(maturity, (list, tuple)):
-            return type(maturity)([years_to_maturity(m) for m in maturity])
-        if is_str(maturity):
-            maturity = maturity.lower()
-            if maturity in _tenors:
-                return _tenors[maturity]
-            else:
-                return int(maturity[:-1]) / dict(q = 4, y = 1, m = 12, w = 52, d = 365, b = 252)[maturity[-1]]
-    if not is_date(maturity):
+    if isinstance(maturity, (list, tuple)):
+        return type(maturity)([years_to_maturity(m, ts=ts) for m in maturity])
+    elif is_str(maturity): ## years_to_maturity('5y',..)
+        maturity = maturity.lower()
+        if maturity in _tenors:
+            return _tenors[maturity]
+        else:
+            return int(maturity[:-1]) / dict(q = 4, y = 1, m = 12, w = 52, d = 365, b = 252)[maturity[-1]]
+    elif is_num(maturity):
         return maturity
-    if ts is None:
-        ts = dt(0)
-    if is_date(ts):
-        y = years_between(ts, maturity)
-        frac = (dt(maturity, f'-{y}y') - ts).days / 365.
-        return y + frac
-    elif isinstance(ts, list):
-        return [years_to_maturity(maturity, t) for t in ts]             
-    elif is_ts(ts):
-        if len(ts) == 0:
-            return ts
-        t0 = ts.index[0]
-        years = list(range(2+maturity.year-t0.year))[::-1]
-        dates = [dt(maturity, f'-{y}y') for y in years]
-        y = df_reindex(pd.Series(years, dates), ts, method = 'bfill')
-        days = df_reindex(pd.Series(dates, dates), ts, method = 'bfill')
-        frac = pd.Series((days.values - days.index).days / 365, ts.index)
-        return y + frac
+    elif is_date(maturity):
+        if ts is None:
+            ts = dt(0)
+        if is_date(ts):
+            y = years_between(ts, maturity)
+            frac = (dt(maturity, f'-{y}y') - ts).days / 365.
+            return y + frac
+        elif isinstance(ts, list):
+            return [years_to_maturity(maturity, t) for t in ts]             
+        elif is_ts(ts):
+            if len(ts) == 0:
+                return ts
+            t0 = ts.index[0]
+            years = list(range(2+maturity.year-t0.year))[::-1]
+            dates = [dt(maturity, f'-{y}y') for y in years]
+            y = df_reindex(pd.Series(years, dates), ts, method = 'bfill')
+            days = df_reindex(pd.Series(dates, dates), ts, method = 'bfill')
+            frac = pd.Series((days.values - days.index).days / 365, ts.index)
+            return y + frac
+        else:
+            raise ValueError(f'cannot calculate years_to_maturity for {maturity} and {ts}')
     else:
-        raise ValueError(f'cannot calculate years_to_maturity for {maturity} and {ts}')
+        raise ValueError('not sure how to calculate years to maturity')
