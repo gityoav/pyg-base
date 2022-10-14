@@ -119,10 +119,10 @@ def interpolate(a, y, x = None,
     if isinstance(a, list):
         a = np.array(a)
     if is_ts(a):
-        y = df_reindex(y, a)
-        x = df_reindex(x, a, method = xmethod)
+        y = df_reindex(y, a) if is_ts(y) else y
+        x = df_reindex(x, a, method = xmethod) if is_ts(x) else x
     if is_df(y):
-        x = df_reindex(x, y, method = xmethod)
+        x = df_reindex(x, y, method = xmethod) if is_df(x) else x
     res = _interpolate(y = y,x = x,xnew = a, kind = kind, 
                            axis = axis, 
                            copy = copy, 
