@@ -21,7 +21,8 @@ def _interpolate(y,x,xnew,
                    copy = False, 
                    bounds_error = False,
                    fill_value = np.nan,
-                   assume_sorted = True):
+                   assume_sorted = True,
+                   min_n = 2):
     """
     
     :Example: simple interplation with nan
@@ -69,6 +70,8 @@ def _interpolate(y,x,xnew,
     mask = ~np.isnan(y)
     x = x[mask]
     y = y[mask]
+    if len(y) < min_n:
+        return np.nan + xnew
     return interp1d(x, y, kind = kind, axis = axis, copy = copy, 
                     bounds_error = bounds_error, 
                     fill_value = fill_value,
