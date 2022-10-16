@@ -1,4 +1,4 @@
-from pyg_base._dates import dt, DAY, TMIN, TMAX, dt_bump, is_period, is_bump, ymd
+from pyg_base._dates import dt, DAY, TMIN, TMAX, dt_bump, is_period, is_bump, ymd, period
 from pyg_base._types import is_int, is_str, is_ts, is_arr, is_pd, is_nan
 from pyg_base._as_list import as_list 
 from pyg_base._dict import Dict
@@ -167,19 +167,40 @@ def drange(t0 = None, t1 = None, bump = None):
             return [t0]
     elif is_period(bump):
         bump = bump.lower()
-        period = bump[-1]
-        interval = int(bump[:-1]) * dict(q = 3).get(period,1)
-        if (t1-t0).days * interval < 0:
-            raise ValueError('cannot go from %s to %s in steps of %s'%(t0,t1,bump))
-        freq = _LY[period]
-        if period == 'b':
-            res = [t for t in rrule(freq, interval = 1, dtstart = min(t0,t1), until = max(t0,t1)) if t.weekday()<5]
-            res = res[::-1] if interval<0 else res    
-            res = res[::abs(interval)] if abs(interval)>1 else res
-            return res            
+        bmp = period.search(bump).group()
+        if bump == bmp: ## single bump
+            prd = bump[-1]
+            interval = int(bump[:-1]) * dict(q = 3).get(prd ,1)
+            if (t1-t0).days * interval < 0:
+                raise ValueError('cannot go from %s to %s in steps of %s'%(t0,t1,bump))
+            freq = _LY[prd]
+            if prd == 'b':
+                res = [t for t in rrule(freq, interval = 1, dtstart = min(t0,t1), until = max(t0,t1)) if t.weekday()<5]
+                res = res[::-1] if interval<0 else res    
+                res = res[::abs(interval)] if abs(interval)>1 else res
+                return res            
+            else:
+                return list(rrule(freq, interval = interval, dtstart = t0, until = t1))
         else:
-            return list(rrule(freq, interval = interval, dtstart = t0, until = t1))
-
+            t = t0
+            res = []
+            if t1>t0: 
+                if dt_bump(t0, bump) <= t0:
+                    raise ValueError('cannot move forward from %s to %s using %s'%(t0, t1, bump))
+                while t<=t1:
+                    res.append(t)
+                    t = dt_bump(t, bump)
+                return res
+            elif t1<t0: 
+                if dt_bump(t0, bump) >= t0:
+                    raise ValueError('cannot move back from %s to %s using %s'%(t0, t1, bump))
+                while t>=t1:
+                    res.append(t)
+                    t = dt_bump(t, bump)
+                return res
+            else:
+                return [t0]
+                            
 
 class _calendar():
     def dt_bump(self, t, bump):
@@ -555,8 +576,15 @@ class Calendar(Dict, _calendar):
             bumped date.
 
         """
-        if is_str(bump) and bump.lower().endswith('b'):
-            return self.add(t, int(bump[:-1]))
+        if is_str(bump):
+            while period.search(bump) is not None:
+                bmp = period.search(bump).group().lower()
+                bump = bump[len(bmp):]
+                if bmp.endswith('b'):
+                    t = self.add(t, int(bmp[:-1]))
+                else:
+                    t = dt_bump(t, bmp)
+            return t
         else:
             return dt_bump(t, bump)
         
