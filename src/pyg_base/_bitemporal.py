@@ -217,7 +217,7 @@ def Bi(df, asof = None):
     
     :Example: make the _asof same as date index
     ---------
-    >>> df = pd.DataFrame(dict(a = range(11)), drange(10))
+    >>> df = pd.DataFrame(dict(a = range(11)), drange(-10))
     >>> assert eq(Bi(df, 0)[_asof].values, df.index.values) 
 
     :Example: make the _asof right now...
@@ -240,14 +240,20 @@ def Bi(df, asof = None):
     >>> assert set(Bi(df, asof)[_asof]) ==  set([asof])
     
     """
+    if asof is None:
+        return df
     if is_series(df):
         df = pd.DataFrame(df, columns = [_series])
     else:
         df = df.copy()
     if is_bump(asof):
+        now = dt()
         df[_asof] = dt_bump(df, asof).index
+        df.loc[(df[_asof] > now), _asof] = now
     elif isinstance(asof, list):
+        now = dt()
         df[_asof] = dt_bump(df, *asof).index
+        df.loc[(df[_asof] > now), _asof] = now
     else:
         df[_asof] = dt(asof)
     return df
