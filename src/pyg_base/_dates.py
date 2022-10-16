@@ -27,7 +27,7 @@ months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 
 yyyymm = re.compile('^[0-9]{4}[-/ .][0-9]{1,2}$')
 yyyymmm = re.compile('^[0-9]{4}[-/ .](%s)[a-z]*$'%('|'.join(months)), re.IGNORECASE)
 wkdays = dict(mon = 0, tue = 1, wed = 2, thu = 3, fri = 4, sat = 5, sun = 6)
-period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]$')
+period = re.compile('^[-+]{0,1}[0-9]*[dbwmqyhnsDBWMQYHNS]')
 mmm2m = dict(jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12)
 
 __all__ = ['dt','dt_bump', 'today', 'ymd', 'TMIN', 'TMAX', 'DAY', 'futcodes', 'dt2str', 'is_period', 'nth_weekday_of_month']
@@ -282,6 +282,8 @@ def uk2dt(t, tzinfo = None):
         return None
     elif t in ('NaT'):
         return NaT
+    elif t.lower() == 'now':
+        return datetime.datetime.now()
     res = parser.parse(t)
     if ambiguity.search(t) is not None:
         if res.day<13:
@@ -298,6 +300,8 @@ def us2dt(t, tzinfo = None):
         return None
     elif t in ('NaT'):
         return NaT
+    elif t.lower() == 'now':
+        return datetime.datetime.now()
     res = parser.parse(t)
     if ambiguity.search(t) is not None and res.month != int(t[:2].replace('-','').replace('/','')):
         raise ValueError('the date is not in US format')
@@ -325,7 +329,12 @@ def dt_bump(t, *bumps):
     >>> t  = pd.Series([1,2,3], drange(dt(2000,1,1),2))
     >>> assert eq(dt_bump(t, 1), pd.Series([1,2,3], drange(dt(2000,1,2),2)))
 
-        
+    Example: multiple tenors
+    ------------------------
+    >>> t = dt(2000)
+    >>> assert dt_bump(t, '1y1m1d') == dt(2001,2,2) ## move up a year a month and a day
+    >>> assert dt_bump(t, '1y1m-1d') == dt(2001,1,31) ## move up a year and a month, then a day back
+
     """
     bumps = as_list(bumps)
     if is_ts(t):
@@ -342,39 +351,42 @@ def dt_bump(t, *bumps):
             t = t + bump
         elif is_str(bump):
             bump = bump.lower()
-            if not is_period(bump):
+            while period.search(bump) is not None:
+                bmp = period.search(bump).group()
+                bump = bump[len(bmp):]
+                if bmp.endswith('d'):
+                    t = t + DAY * int(bmp[:-1])
+                elif bmp.endswith('w'):
+                    t  = t + DAY * (7 * int(bmp[:-1]))
+                elif bmp.endswith('m'):
+                    t = _ymd(t.year, t.month + int(bmp[:-1]), t.day)
+                elif bmp.endswith('q'):
+                    t = _ymd(t.year, t.month + 3  * int(bmp[:-1]), t.day)
+                elif bmp.endswith('y'):
+                    t = _ymd(t.year+int(bmp[:-1]), t.month, t.day)
+                elif bmp.endswith('h'):
+                    t = t + datetime.timedelta(hours = int(bmp[:-1]))
+                elif bmp.endswith('n'):
+                    t = t + datetime.timedelta(minutes = int(bmp[:-1]))
+                elif bmp.endswith('s'):
+                    t = t + datetime.timedelta(seconds = int(bmp[:-1]))
+                elif bmp.endswith('b'):
+                    bdays = int(bump[:-1])
+                    wday = t.weekday()
+                    if wday>4:
+                        t = t + (7-wday) * DAY
+                        wday = 0
+                    w = bdays // 5
+                    d = bdays - w * 5
+                    t = t + DAY * (7*w)
+                    if wday + d > 4:
+                        d+=2
+                    t += DAY * d
+            if len(bump):
                 try:
                     t = tz_convert(t, bump)
                 except Exception:
                     raise ValueError('%s is not a period I know...'%bump)
-            if bump.endswith('d'):
-                t = t + DAY * int(bump[:-1])
-            elif bump.endswith('w'):
-                t  = t + DAY * (7 * int(bump[:-1]))
-            elif bump.endswith('m'):
-                t = _ymd(t.year, t.month + int(bump[:-1]), t.day)
-            elif bump.endswith('q'):
-                t = _ymd(t.year, t.month + 3  * int(bump[:-1]), t.day)
-            elif bump.endswith('y'):
-                t = _ymd(t.year+int(bump[:-1]), t.month, t.day)
-            elif bump.endswith('h'):
-                return t + datetime.timedelta(hours = int(bump[:-1]))
-            elif bump.endswith('n'):
-                return t + datetime.timedelta(minutes = int(bump[:-1]))
-            elif bump.endswith('s'):
-                return t + datetime.timedelta(seconds = int(bump[:-1]))
-            elif bump.endswith('b'):
-                bdays = int(bump[:-1])
-                wday = t.weekday()
-                if wday>4:
-                    t = t + (7-wday) * DAY
-                    wday = 0
-                w = bdays // 5
-                d = bdays - w * 5
-                t = t + DAY * (7*w)
-                if wday + d > 4:
-                    d+=2
-                t += DAY * d
         else:
             t = t + bump
     return t

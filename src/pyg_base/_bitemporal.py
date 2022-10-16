@@ -32,7 +32,6 @@ def _as_what(what):
         return what
     
     
-
 def bi_read(df, asof = None, what = 'last'):
     """
     Parameters
@@ -76,7 +75,7 @@ def bi_read(df, asof = None, what = 'last'):
         else:
             columns = list(set(sum(combos, ())))
         res = res[columns]
-        columns = [0 if c == _series else c for c in columns]
+        columns = [0 if c == _series else c for c in columns] ## this will clash with a dataframe with 0 column but thats fine
         res.columns = columns
     res.index.name = index_name
     if res.shape[1] == 1 and res.columns[0] == _series:
