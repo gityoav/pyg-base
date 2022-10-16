@@ -1,11 +1,17 @@
 ### we create an interface for read/write of pandas which is bitemporal
 # the data
-from pyg_base import is_df, dt, is_date, is_series, is_bump, dt_bump, is_int, as_list
+from pyg_base._types import is_df, is_date, is_series, is_int
+from pyg_base._dates import dt, dt_bump, is_bump
+from pyg_base._as_list import as_list
+from pyg_base._loop import loop
+from pyg_base._sort import sort
+
 import pandas as pd
 import numpy as np
 from functools import partial 
 
 _series = '_is_series'
+_columns = '_column_names'
 _asof = '_asof'
 
 def is_bi(df):
@@ -37,8 +43,12 @@ def bi_read(df, asof = None, what = 'last'):
     asof: datetime
         read the values as if date is asof
         
-    what: str/function
-        how to handle multiple values...
+    what: int, str or function
+        how to select a value from multiple values associated with same index
+        0 or 'first' : first value that was observed
+        -1 or 'last' : last value observed
+        -2,-3...    : one or two before last if available, else first
+        1,2...    : 2nd or 3rd releases if available, else last
     
     Example:
     --------
@@ -59,30 +69,20 @@ def bi_read(df, asof = None, what = 'last'):
     gb = df.sort_values(_asof).groupby(df.index.name)
     res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
     res = res.drop(columns = _asof)
+    if _columns in res.columns: ## we have a data frame with potentially mixed columns
+        combos = list(set(res[_columns].values))
+        if len(combos) == 1:
+            columns = list(combos[0])
+        else:
+            columns = list(set(sum(combos, ())))
+        res = res[columns]
+        columns = [0 if c == _series else c for c in columns]
+        res.columns = columns
     res.index.name = index_name
     if res.shape[1] == 1 and res.columns[0] == _series:
         res = res[_series]
     return res
 
-
-
-
-def bi_updates(new, old):
-    """
-    >>> from pyg import * 
-    >>> old = pd.DataFrame(dict(a = [1,2,3,4,5,6], 
-            _asof = drange(-2) + drange(-1) + drange(0)), 
-            index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
-
-    >>> new = pd.DataFrame(dict(a = [7,8,3,10],
-                                _asof = drange(-2,1)), 
-                           index = drange(-4,-1))
-    """
-
-    raw = new.drop(columns = _asof)
-    prev = bi_read(old, asof = new, what = 'last')
-    update = new[~(prev.reindex(raw.index) == raw).min(axis=1)]
-    return update
 
 def _drop_repeats(d):
     """ 
@@ -106,8 +106,32 @@ def _drop_repeats(d):
     return res
  
 
+@loop(list)
+def _get_columns(df):
+    return tuple(sort([col for col in df.columns if col!=_asof]))
+
+
+@loop(list)
+def _add_columns(df):
+    if _columns in df:
+        return df
+    else:
+        df = df.copy()
+        columns = tuple([col for col in df.columns if col!=_asof])
+        df[_columns] = [columns]*len(df)
+    return df
+    
+@loop(list)
+def _set_unique_column(df, col = _series):
+    df = df.copy()
+    columns = [col if c!=_asof else c for c in df.columns]
+    df.columns = columns    
+    return df
+
 def bi_merge(*bis):
     """
+    merges two or more bitemporal tables
+    
     Example: new values override old ones on same index and asof
     --------
     >>> from pyg import * 
@@ -130,9 +154,54 @@ def bi_merge(*bis):
     >>> assert eq(bi_read(merged, dt(2)), s1)
     >>> assert eq(bi_read(merged, what = 'first'), s1)
     >>> assert eq(bi_read(merged, dt(3)), s)
+    
+    Example: handling of multiple column names with pseudo-series
+    ------------------------------------------
+    ## if we have SINGLE COLUMNS dataframes, even if they clash by name, we merge into a SERIES    
+    >>> from pyg import * 
+    >>> s = pd.Series([1,2,3], drange(2))
+    >>> p1 = pd.DataFrame(dict(a = [1,2,4]), drange(2))
+    >>> p2 = pd.DataFrame(dict(b = [1,3,4]), drange(2))
+    >>> bs = Bi(s, 0)
+    >>> bp1 = Bi(p1, 1)
+    >>> bp2 = Bi(p2, 2)
+    >>> m = bi_merge(bs, bp1)
+    >>> assert sort(m.columns) == sort([_series, _asof])
+    >>> m = bi_merge(bs, bp1, bp2)    
+    >>> assert sort(m.columns) == sort([_series, _asof])
+    >>> assert eq(bi_read(m), as_series(p2))
+    
+    Example: handling of multiple column names with a 2d dataframe
+    ------------------------------------------
+    >>> from pyg import * 
+    >>> from pyg_base._bitemporal import _asof, _series, _columns
+    >>> s = pd.Series([1,2,3], drange(-2))
+    >>> df = pd.DataFrame(dict(a = [1,2,4], b = [4,5,6]), drange(-2))
+    >>> bs = Bi(s, dt(1))
+    >>> bdf = Bi(df, dt(2))
+    >>> m = bi_merge(bs, bdf)
+    >>> assert sort(m.columns) == sort(['a','b',_asof, _series, _columns])
+    >>> assert eq(bi_read(m, asof = dt(1)), s)
+    >>> assert eq(bi_read(m, asof = dt(2)), df)
+    >>> df2 = pd.DataFrame(dict(a = [1,2,4], b = [4,5,6]), drange(-1,1))
+    >>> bdf2 = Bi(df2, dt(2))
+    >>> m2 = bi_merge(bs, bdf2)
+    >>> assert sort(bi_read(m2).columns) == sort(('b', 0, 'a'))
 
     """
     bis = as_list(bis)
+    ### we first determine columns needed
+    with_columns = [b for b in bis if _columns in b.columns]
+    if len(with_columns):
+        bis = _add_columns(bis)
+    else:
+        columns = list(set(_get_columns(bis)))
+        if len(columns) > 1:
+            ns = [len(c) for c in columns]
+            if max(ns) > 1: ## too bad
+                bis = _add_columns(bis)
+            else: ## we remove all column names
+                bis = _set_unique_column(bis)
     df = pd.concat(bis)
     index_name = df.index.name
     if index_name is None:

@@ -1,7 +1,7 @@
 from pyg_base._as_float import as_float
 from pyg_base._as_list import as_list, as_tuple, first, last, passthru, unique, is_rng
 from pyg_base._as_primitive import as_primitive
-from pyg_base._bitemporal import Bi, bi_merge, bi_read
+from pyg_base._bitemporal import Bi, bi_merge, bi_read, is_bi
 from pyg_base._cache import cache, cache_func
 from pyg_base._cfg import mkdir, get_cache, cfg_read, cfg_write, CFG
 from pyg_base._dates import iso, dt, uk2dt, us2dt, dt_bump, as_tz, tz_convert, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m
@@ -19,7 +19,7 @@ from pyg_base._logger import logger, get_logger
 from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all, skip_if_data_pd, skip_if_data_pd_or_np, grab_parameter_from_dict
 from pyg_base._named_dict import named_dict
 from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_recolumn, df_concat, df_fillna, presync, df_sync, df_apply, \
-    add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_, df_count, df_sum, df_mean, df_std
+    add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_, df_count, df_sum, df_mean, df_std, as_series
 from pyg_base._pandas import ts_deal_with_issue, ts_gap, ts_degap, df_drop_index_duplicates
 from pyg_base._perdictable import join, perdictable
 from pyg_base._reducer import reducer, reducing
