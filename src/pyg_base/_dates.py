@@ -456,6 +456,8 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
         return NaT
     elif isinstance(t, datetime.date) and not isinstance(t, datetime.datetime):
         t = datetime.datetime(t.year, t.month, t.day, tzinfo = as_tz(tzinfo))
+    elif is_ts(t):
+        return dt_bump(t, *args[1:])
     if isinstance(t, datetime.datetime):
         return reduce(dt_bump, args[1:], tz_convert(t, tzinfo))
     if len(args) == 1:

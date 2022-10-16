@@ -456,6 +456,69 @@ def df_reindex(ts, index = None, method = None, limit = None):
 def _dtype(o):
     return int if is_int(o) else float if is_num(o) else 'object' if o is None or is_str(o) else None
 
+
+def as_series(df, col = None, unique_column = False):
+    """
+    In pandas we have 
+        - series
+        - 2d dataframes 
+        - pseudo-series: dataframes with one column and a name
+    
+    as_series converts pseudo-series/series into:
+        - series if col is None
+        - pseudo-series with header of col, if col is provided
+
+    If multiple dfs are provided, here is how we handle the mixture:
+        - if any proper 2d dfs are present, nothing is done
+        
+        - if we have a mixture of pseudo and series: all are converted to series
+        - if we have multiple pseudo series with different headers: all converted to series
+        - if we have multiple pseudo series with same headers: we keep the header if unique_column else series
+        
+
+    :Example:
+    ---------
+    >>> s = pd.Series([1,2,3], drange(2))
+    >>> s2 = pd.Series([4,5,6], drange(2))
+    >>> p = pd.DataFrame(dict(p=[1,2,3]), drange(2))
+    >>> d = pd.DataFrame(dict(a=[1,2,3], b=[1,2,3]), drange(2))
+    >>> p2 = pd.DataFrame(dict(p=[4,5,6]), drange(2))
+    >>> pq = pd.DataFrame(dict(q=[1,2,3]), drange(2))
+
+    >>> assert eq(as_series(p), s)
+    >>> assert eq(as_series(s, 'p'), p)
+    >>> assert eq(as_series([p,s]), [s,s]) ## mixture all convert to series
+    >>> assert eq(as_series([p,p2]), [s,s2])
+    >>> assert eq(as_series([p,p2], unique_column = True), [p,p2])
+    >>> assert eq(as_series([s,p], 'q'), [pq,pq]) ## both converted to header q
+
+    """
+    if isinstance(df, list):
+        proper_dfs = [d for d in df if is_df(d) and d.shape[1] > 1]
+        if len(proper_dfs):
+            return df
+        else:
+            if col is None and unique_column:
+                cols = list(set([0 if is_series(d) else d.columns[0] for d in df if is_pd(d)]))
+                if len(cols) == 1 and cols[0]!=0:
+                    col = cols[0]                
+            return type(df)([as_series(d, col) for d in df])
+    if col is not None:
+        columns = as_list(col)
+        if is_series(df):
+            return pd.DataFrame(df, columns = columns)
+        elif is_df(df) and df.shape[1] == 1:
+            df = df.copy()
+            df.columns = columns
+            return df
+        else:
+            return df
+    else:        
+        if is_df(df) and df.shape[1] == 1:
+            return df[df.columns[0]]
+        else:
+            return df
+
 def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, limit = None):
     """
     simple concatenator, 
@@ -507,6 +570,17 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
     >>> objs = [np.array([1,2,3]), np.array([4,5,6]), 3, 4]
     >>> df_concat(objs)
 
+    Example: pd.Series and 1d pd.DataFrame handling for vertical axis=0 concatenation
+    --------------------------------------------
+    >>> from pyg import * 
+    >>> s = pd.Series([1,2,3], drange(2))
+    >>> p = pd.DataFrame(dict(p=[1,2,3]), drange(2))
+    >>> pq = pd.DataFrame(dict(q=[1,2,3]), drange(2))
+
+    >>> assert is_series(df_concat([s,p], axis = 0))
+    >>> assert is_df(df_concat([s,p], columns = 'p', axis = 0))
+    >>> assert is_series(df_concat([p,pq], axis = 0)) ## multiple columns, handled as series
+
     """
     if isinstance(objs, dict):
         columns = list(objs.keys())
@@ -515,10 +589,17 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
         df_objs = [o for o in objs if is_pd(o)]
         np_objs = [o for o in objs if is_arr(o)]
         if len(df_objs):
-            res = pd.concat(df_objs, axis = axis, join = join)
-            if len(df_objs) < len(objs):
-                df_objs = [o if is_pd(o) else pd.Series(o, res.index, dtype = _dtype(o)) for o in objs]
-                res = pd.concat(df_objs, axis = axis, join = join)
+            if axis == 0:
+                df_objs = as_series(df_objs, col = columns, unique_column=True)
+            if len(df_objs) < len(objs): # we have a mixture of dfs and numpy
+                if axis == 1:
+                    res = pd.concat(df_objs, axis = axis, join = join)
+                    df_objs = [o if is_pd(o) else pd.Series(o, res.index, dtype = _dtype(o)) for o in objs]
+                    res = pd.concat(df_objs, axis = axis, join = join)
+                else:
+                    raise TypeError('cannot concatenate vertically dataframes and non-dataframes')
+            else:
+                res = pd.concat(df_objs, axis = axis, join = join)                
         elif len(np_objs):
             ns = set([o.shape[0] for o in np_objs])
             if len(ns) == 1:
@@ -538,6 +619,8 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
     if columns is not None and is_df(res):
         if isinstance(columns, list):
             res.columns = columns 
+        elif is_str(columns):
+            res.columns = as_list(columns)
         else:
             res = res.rename(columns = columns)
     res = df_fillna(res, method = method, axis = 1 if axis == 0 else 1, limit = limit)
