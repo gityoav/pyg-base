@@ -1,5 +1,5 @@
 from pyg_base import dt, dt_bump, drange, dt,dt_bump, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, eq, nth_weekday_of_month
-from pyg_base._dates import none2dt, is_period, ym, month, uk2dt, us2dt
+from pyg_base._dates import none2dt, is_period, ym, month, uk2dt, us2dt, period, is_bump
 import datetime
 import pytest
 import dateutil as du
@@ -8,6 +8,16 @@ t = dt.now()
 t0 = d(t.year, t.month, t.day)
 import numpy as np
 import pandas as pd
+
+def test_period():
+    assert is_bump('+1d')
+    assert is_bump('-2d4n')
+    assert not is_bump('d')
+    assert not is_bump('now')
+
+def test_ukdt():
+    assert dt('03/04/95') == dt(1995, 4, 3)
+    assert dt('03/04/1995') == dt(1995, 4, 3)
 
 def test_month():
     assert month(1) == 1

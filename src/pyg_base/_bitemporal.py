@@ -48,6 +48,7 @@ def bi_read(df, asof = None, what = 'last'):
         -1 or 'last' : last value observed
         -2,-3...    : one or two before last if available, else first
         1,2...    : 2nd or 3rd releases if available, else last
+    if what is 'all' then the raw data is returned
     
     Example:
     --------
@@ -56,17 +57,20 @@ def bi_read(df, asof = None, what = 'last'):
             index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
     
     """
-    if not is_bi(df):
+    if not is_bi(df) or what == 'all':
         return df
     if is_date(asof):
         df = df[df[_asof]<=asof]
     if is_bi(asof):
         df = df[df[_asof] <= asof.reindex(df.index)[_asof]]
     index_name = df.index.name
-    if index_name is None:
-        df.index.name = 'index'
-    gb = df.sort_values(_asof).groupby(df.index.name)
-    res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
+    if len(df):        
+        if index_name is None:
+            df.index.name = 'index'
+        gb = df.sort_values(_asof).groupby(df.index.name)
+        res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
+    else:
+        res = df
     res = res.drop(columns = _asof)
     if _columns in res.columns: ## we have a data frame with potentially mixed columns
         combos = list(set(res[_columns].values))
@@ -188,7 +192,9 @@ def bi_merge(*bis):
     >>> assert sort(bi_read(m2).columns) == sort(('b', 0, 'a'))
 
     """
-    bis = as_list(bis)
+    bis = [b for b in as_list(bis) if not b is None]
+    if len(bis) == 1:
+        return bis[0]
     ### we first determine columns needed
     with_columns = [b for b in bis if _columns in b.columns]
     if len(with_columns):
