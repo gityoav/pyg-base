@@ -371,7 +371,7 @@ def dt_bump(t, *bumps):
                 elif bmp.endswith('s'):
                     t = t + datetime.timedelta(seconds = int(bmp[:-1]))
                 elif bmp.endswith('b'):
-                    bdays = int(bump[:-1])
+                    bdays = int(bmp[:-1])
                     wday = t.weekday()
                     if wday>4:
                         t = t + (7-wday) * DAY
@@ -382,11 +382,11 @@ def dt_bump(t, *bumps):
                     if wday + d > 4:
                         d+=2
                     t += DAY * d
-            if len(bump):
+            if len(bmp):
                 try:
-                    t = tz_convert(t, bump)
+                    t = tz_convert(t, bmp)
                 except Exception:
-                    raise ValueError('%s is not a period I know...'%bump)
+                    raise ValueError('%s is not a period I know...'%bmp)
         else:
             t = t + bump
     return t
