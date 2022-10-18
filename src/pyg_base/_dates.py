@@ -382,11 +382,11 @@ def dt_bump(t, *bumps):
                     if wday + d > 4:
                         d+=2
                     t += DAY * d
-            if len(bmp):
+            if len(bump):
                 try:
-                    t = tz_convert(t, bmp)
+                    t = tz_convert(t, bump)
                 except Exception:
-                    raise ValueError('%s is not a period I know...'%bmp)
+                    raise ValueError('%s is not a period I know...'%bump)
         else:
             t = t + bump
     return t
