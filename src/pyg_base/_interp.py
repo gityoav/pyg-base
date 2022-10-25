@@ -1,7 +1,9 @@
 import scipy
 import numpy as np
+import pandas as pd
 from scipy.interpolate import interp1d
-from pyg_base._types import is_ts, is_num, is_arr, is_df, is_strs, is_nan
+from pyg_base._tenor import years_to_maturity
+from pyg_base._types import is_ts, is_num, is_arr, is_df, is_strs, is_nan, is_date
 from pyg_base._pandas import df_reindex
 from pyg_base._loop import pd2np
 
@@ -67,7 +69,7 @@ def _interpolate(y,x,xnew,
         return res
     if is_nan(xnew):
         return np.nan
-    mask = ~np.isnan(y)
+    mask = ~pd.isnull(y)
     x = x[mask]
     y = y[mask]
     if len(y) < min_n:
@@ -119,6 +121,8 @@ def interpolate(a, y, x = None,
         x = y.columns.values
     elif isinstance(x, list):
         x = np.array(x)
+    if is_date(a) and is_ts(y):
+        a = years_to_maturity(a, y)
     if isinstance(a, list):
         a = np.array(a)
     if is_ts(a):
