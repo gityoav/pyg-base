@@ -321,6 +321,8 @@ def is_period(bump):
 def is_bump(bump):
     return is_period(bump) or (is_int(bump) and bump<1500) or isinstance(bump, (datetime.timedelta, du.relativedelta.relativedelta))
 
+_bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
+
 def dt_bump(t, *bumps):
     """
     :Example:
@@ -335,6 +337,13 @@ def dt_bump(t, *bumps):
     >>> assert dt_bump(t, '1y1m1d') == dt(2001,2,2) ## move up a year a month and a day
     >>> assert dt_bump(t, '1y1m-1d') == dt(2001,1,31) ## move up a year and a month, then a day back
 
+    Example: specific bumps
+    -----------------------
+    >>> from pyg import  * 
+    >>> t = dt(2022, 10, 22) ## saturday
+    >>> assert dt_bump(t, 'spot') == dt(2022, 10, 24)
+    >>> assert dt_bump(t, 'o/n') == dt(2022, 10, 25)
+    >>> assert dt(t, 't/n') == dt(2022, 10, 26)
     """
     bumps = as_list(bumps)
     if is_ts(t):
@@ -351,6 +360,7 @@ def dt_bump(t, *bumps):
             t = t + bump
         elif is_str(bump):
             bump = bump.lower()
+            bump = _bumps.get(bump, bump)
             while period.search(bump) is not None:
                 bmp = period.search(bump).group()
                 bump = bump[len(bmp):]

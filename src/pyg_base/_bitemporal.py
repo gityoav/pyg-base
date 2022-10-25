@@ -17,22 +17,16 @@ _asof = '_asof'
 def is_bi(df):
     return is_df(df) and _asof in df.columns
 
-_first = lambda v: v.iloc[0]
-_last = lambda v: v.iloc[-1]
 _nth = lambda v, n: v.iloc[min(n, len(v)-1)] if n>=0 else v.iloc[max(n, -len(v))]
     
 def _as_what(what):
-    if what == 'last':
-        return _last
-    elif what == 'first':
-        return _first
-    elif is_int(what):
+    if is_int(what):
         return partial(_nth, n = what)
     else:
         return what
     
     
-def bi_read(df, asof = None, what = 'last'):
+def bi_read(df, asof = None, what = -1):
     """
     Parameters
     ----------
@@ -44,8 +38,9 @@ def bi_read(df, asof = None, what = 'last'):
         
     what: int, str or function
         how to select a value from multiple values associated with same index
-        0 or 'first' : first value that was observed
-        -1 or 'last' : last value observed
+        'first'  or 'last' would be the first non-nan values.
+        0 : first actual value that was observed, even if nan
+        -1: last actual value observed, even if nan
         -2,-3...    : one or two before last if available, else first
         1,2...    : 2nd or 3rd releases if available, else last
     if what is 'all' then the raw data is returned
@@ -79,11 +74,28 @@ def bi_read(df, asof = None, what = 'last'):
         else:
             columns = list(set(sum(combos, ())))
         res = res[columns]
-        columns = [0 if c == _series else c for c in columns] ## this will clash with a dataframe with 0 column but thats fine
-        res.columns = columns
     res.index.name = index_name
     if res.shape[1] == 1 and res.columns[0] == _series:
         res = res[_series]
+    else:
+        columns = [0 if c == _series else c for c in columns] ## this will clash with a dataframe with 0 column but thats fine
+        res.columns = columns
+    return res
+
+def bi_asof(df, what = -1):
+    """
+    returns a timeseries stamped on the dates for which we have observations
+    >>> df = pd.DataFrame(dict(a = [1,2,3,4,5,6], 
+            _asof = drange(-2) + drange(-1) + drange(0)), 
+            index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
+    >>> what = -1    
+
+    """
+    if not is_bi(df) or what == 'all':
+        return df
+    gb = df.sort_index().groupby(_asof)
+    res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
+    res = res.drop(columns = _asof)
     return res
 
 
@@ -131,46 +143,63 @@ def _set_unique_column(df, col = _series):
     df.columns = columns    
     return df
 
-def bi_merge(*bis):
+def bi_merge(old_data, new_data, asof = 'now', existing_data = None):
     """
-    merges two or more bitemporal tables
+    merges two or more bitemporal tables.
+    
+    Parameters:
+    -----------
+    old_data: old values, can be None, dataframe or bitemporal
+    
+    new_data: dataframe or list of dataframes
+    
+    asof:
+        policy for handling non-bitemporal new data
+        If new_data is NOT bitemporal converts using asof
+    
+    existing_data:
+        policy for handling old_data
+        'ignore/overwrite': ignores old data
+        False/0/None: ignore non-bitemporals
+        other values: use these to convert    
     
     Example: new values override old ones on same index and asof
     --------
     >>> from pyg import * 
-    >>> s = pd.Series([1,2,3], drange(2))
-    >>> old = Bi(s, 0)    
-    >>> new = Bi(s+1, 0)
-    >>> merged = bi_merge(old, new)
-    >>> assert eq(merged, new)
+    >>> s = pd.Series([1,2,3], drange(-3,-1))
+    >>> old_data = Bi(s, 0)    
+    >>> new_data = Bi(s+1, 0)
+    >>> asof = 'now'; existing_data = None
+    >>> merged = bi_merge(old_data, new_data)
+    >>> assert eq(merged, new_data)
     >>> assert eq(bi_read(merged), s+1)
     
     Example: handling of nan
     ------------------------
-    >>> s = pd.Series([1,2,3], drange(2))
-    >>> s1 = pd.Series([1,2,np.nan], drange(2))
-    >>> s2 = pd.Series([1,np.nan,3], drange(2))
+    >>> s = pd.Series([1,2,3], drange(-3,-1))
+    >>> s1 = pd.Series([1,2,np.nan], drange(-3,-1))
+    >>> s2 = pd.Series([1,np.nan,3], drange(-3,-1))
     >>> b1 = Bi(s1, 0)     
     >>> b2 = Bi(s2, 1)
     >>> merged = bi_merge(b1, b2)
     >>> assert eq(bi_read(merged), s)
-    >>> assert eq(bi_read(merged, dt(2)), s1)
-    >>> assert eq(bi_read(merged, what = 'first'), s1)
-    >>> assert eq(bi_read(merged, dt(3)), s)
+    >>> assert eq(bi_read(merged, dt(-1)), s1)
+    >>> assert eq(bi_read(merged, what = 0), s1)
+    >>> assert eq(bi_read(merged, dt(0)), s)
     
     Example: handling of multiple column names with pseudo-series
     ------------------------------------------
     ## if we have SINGLE COLUMNS dataframes, even if they clash by name, we merge into a SERIES    
     >>> from pyg import * 
-    >>> s = pd.Series([1,2,3], drange(2))
-    >>> p1 = pd.DataFrame(dict(a = [1,2,4]), drange(2))
-    >>> p2 = pd.DataFrame(dict(b = [1,3,4]), drange(2))
+    >>> s = pd.Series([1,2,3], drange(-3,-1))
+    >>> p1 = pd.DataFrame(dict(a = [1,2,4]), drange(-3,-1))
+    >>> p2 = pd.DataFrame(dict(b = [1,3,4]), drange(-3,-1))
     >>> bs = Bi(s, 0)
     >>> bp1 = Bi(p1, 1)
     >>> bp2 = Bi(p2, 2)
     >>> m = bi_merge(bs, bp1)
     >>> assert sort(m.columns) == sort([_series, _asof])
-    >>> m = bi_merge(bs, bp1, bp2)    
+    >>> m = bi_merge(bs, [bp1, bp2])    
     >>> assert sort(m.columns) == sort([_series, _asof])
     >>> assert eq(bi_read(m), as_series(p2))
     
@@ -192,9 +221,20 @@ def bi_merge(*bis):
     >>> assert sort(bi_read(m2).columns) == sort(('b', 0, 'a'))
 
     """
-    bis = [b for b in as_list(bis) if not b is None]
+    if existing_data in ('ignore', 'overwrite'):
+        old_bis = []
+    else:
+        if not existing_data:
+            old_bis = [b for b in as_list(old_data) if is_bi(b)]
+        else:
+            old_bis = [b if is_bi(b) else Bi(b, existing_data) for b in as_list(old_data)]
+    new_bis = [b if is_bi(b) else Bi(b, asof) for b in as_list(new_data)]            
+    bis = old_bis + new_bis
+    if len(bis) == 0:
+        return None
     if len(bis) == 1:
         return bis[0]
+    bis = [b if is_bi(b) else Bi(b, asof) for b in bis]
     ### we first determine columns needed
     with_columns = [b for b in bis if _columns in b.columns]
     if len(with_columns):
@@ -246,13 +286,16 @@ def Bi(df, asof = None):
     >>> assert set(Bi(df, asof)[_asof]) ==  set([asof])
     
     """
-    if asof is None:
+    if asof is None or is_bi(df):
         return df
     if is_series(df):
         df = pd.DataFrame(df, columns = [_series])
     else:
         df = df.copy()
-    if is_bump(asof):
+    if asof == 'shift':
+        now = dt()
+        df[_asof] = list(df.index[1:]) + [now]        
+    elif is_bump(asof):
         now = dt()
         df[_asof] = dt_bump(df, asof).index
         df.loc[(df[_asof] > now), _asof] = now
