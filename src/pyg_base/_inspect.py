@@ -15,6 +15,11 @@ def getargspec(function):
     :Returns:
     -------
     inspect.FullArgSpec
+    
+    from pyg import * 
+    f = lambda a=1, b=2: a+b
+    function = partial(f, a = 2)
+    
 
     """
     if hasattr(function, 'fullargspec'):
@@ -86,9 +91,9 @@ def getargs(function, n = 0):
     try:
         argspec = getargspec(function)
         if argspec.varargs or n == 0:
-            return argspec.args
+            return argspec.args + argspec.kwonlyargs
         else:
-            return argspec.args[n:]
+            return (argspec.args + argspec.kwonlyargs)[n:]
     except Exception:
         return []
     
