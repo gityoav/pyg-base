@@ -1,8 +1,9 @@
 import numpy as np
 from pyg_base._logger import logger
-from pyg_base._inspect import getargspec, getargs, argspec_add
+from pyg_base._inspect import getargspec, getargs, argspec_add, getcallarg
 from pyg_base._dictattr import dictattr
 from pyg_base._as_list import as_list
+from pyg_base._types import NoneType
 from copy import copy
 import datetime
 import time
@@ -231,6 +232,47 @@ try_none = try_value
 try_true = try_value(value = True)
 try_false = try_value(value = False)
 try_list = try_value(value = [])
+
+
+class do_if(wrapper):
+    """
+    Conditional execution based on the type of the first parameter
+    
+    :Parameters:
+    ------------
+    function callable
+        The function we want to decorate
+    inc: type or tuple of types
+        If provided, executes the function only if first arg IS of the included types
+    exc: type or tuple of types
+        If provided, execute function only if first arg is NOT on of the excluded types.
+
+    if_not_none will run if first parameter is not None
+    
+    :Example:
+    --------------
+    >>> from pyg import *
+    >>> first_element = lambda a: a[0]
+    >>> assert if_not_none(first_element)(None) is None
+    >>> assert do_if(first_element, (str, list))('works on strings') == 'w'
+    >>> assert do_if(first_element, (str, list))(['works','on','list']) == 'works'
+    >>> assert do_if(first_element, (str, list))(('not', 'working', 'on', 'tuple')) == ('not', 'working', 'on', 'tuple')
+    
+    """
+    def __init__(self, function = None, inc = None, exc = None):
+        super(do_if, self).__init__(function = function, inc = inc, exc = exc)
+    def wrapped(self, *args, **kwargs):
+        if self.inc is None and self.exc is None: 
+            return self.function(*args, **kwargs)
+        arg = getcallarg(self.function, args, kwargs)
+        if self.inc is not None and not isinstance(arg, self.inc):
+            return arg
+        elif self.exc is not None and isinstance(arg, self.exc):
+            return arg
+        else:
+            return self.function(*args, **kwargs)
+
+if_not_none = do_if(exc = NoneType)
 
 def _str(value):
     """
