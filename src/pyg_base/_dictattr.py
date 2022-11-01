@@ -187,6 +187,20 @@ class dictattr(dict):
                 res = dict(res)[k]
             return res
     
+    def __or__(self, other):
+        """
+        The or operator is already used as an "update" in late python
+        We want the object type to match current object type though...
+        
+        Example
+        -------
+        >>> from pyg import *        
+        >>> assert dictable(a = 1, b = 2) | dictable(c = [3, 4]) == dictable(a = 1, b = 2, c = [3, 4])
+        >>> assert dictable(a = 1, b = [2,3]) | dict(c = 4, d = [5,6]) == dictable(a = 1, b = [2,3], c = 4, d = [5,6])
+
+        """
+        return type(self)(super(dictattr, self).__or__(other))
+
     def copy(self):
         return copy(self)
     

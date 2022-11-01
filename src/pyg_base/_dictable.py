@@ -784,8 +784,21 @@ class dictable(Dict):
     def __add__(self, other):
         if other in (None, 0):
             return self
-        return self.concat(self, other)                
-    
+        return self.concat(self, other)
+
+    def __and__(self, other):
+        """
+        equivalent 
+        
+        Example:
+        --------
+        >>> from pyg import * 
+        >>> rs = dictable(a = 1, b = 2, c = [3,4])
+        >>> assert rs & ['c', 'd'] == rs[['c']]
+
+        """
+        return self[self.columns & other]
+            
     __radd__ = __add__
     
     def _listby(self, by):
