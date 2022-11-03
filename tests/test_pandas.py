@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime
-from pyg_base import df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex
+from pyg_base import df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex, min_, max_
 from operator import add, itruediv, sub, mul, pow
 
 def test_df_slice():
@@ -15,6 +15,83 @@ def test_df_slice():
     feb1 = drange(dt(2018,2,1), dt(2021,11,1), '1y')
     res = df_slice(df, jan1, feb1, openclose = '[)')
     assert set(res.index.month) == {1}
+
+
+def test_min_max_with_num():
+    a = 2
+
+    b = pd.Series([1,2,3])
+    assert eq(min_(a, b), pd.Series([1,2,2]))
+    assert eq(max_(a, b), pd.Series([2,2,3]))
+    assert eq(min_(b, a), pd.Series([1,2,2]))
+    assert eq(max_(b, a), pd.Series([2,2,3]))
+
+    b = pd.DataFrame(dict(x=[1,2,3]))
+    assert eq(min_(a, b), pd.DataFrame(dict(x = [1,2,2])))
+    assert eq(max_(a, b), pd.DataFrame(dict(x = [2,2,3])))
+    assert eq(min_(b, a), pd.DataFrame(dict(x = [1,2,2])))
+    assert eq(max_(b, a), pd.DataFrame(dict(x = [2,2,3])))
+
+    b = pd.DataFrame(dict(x=[1,2,3], y = [3,2,1]))
+    assert eq(min_(a, b), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(a, b), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+    assert eq(min_(b, a), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(b, a), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+
+def test_min_max_with_series():
+    a = pd.Series([2,2,2])
+    b = pd.Series([1,2,3])
+    assert eq(min_(a, b), pd.Series([1,2,2]))
+    assert eq(max_(a, b), pd.Series([2,2,3]))
+    assert eq(min_(b, a), pd.Series([1,2,2]))
+    assert eq(max_(b, a), pd.Series([2,2,3]))
+
+    b = pd.DataFrame(dict(x=[1,2,3]))
+    assert eq(min_(a, b), pd.Series([1,2,2]))
+    assert eq(max_(a, b), pd.Series([2,2,3]))
+    assert eq(min_(b, a), pd.Series([1,2,2]))
+    assert eq(max_(b, a), pd.Series([2,2,3]))
+
+    b = pd.DataFrame(dict(x=[1,2,3], y = [3,2,1]))
+    assert eq(min_(a, b), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(a, b), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+    assert eq(min_(b, a), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(b, a), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+
+def test_min_max_with_pseudoseries():
+    a = pd.DataFrame(dict(a = [2,2,2]))
+    b = pd.Series([1,2,3])
+    assert eq(min_(a, b), pd.Series([1,2,2]))
+    assert eq(max_(a, b), pd.Series([2,2,3]))
+    assert eq(min_(b, a), pd.Series([1,2,2]))
+    assert eq(max_(b, a), pd.Series([2,2,3]))
+
+    b = pd.DataFrame(dict(x=[1,2,3]))
+    assert eq(min_(a, b), pd.Series([1,2,2]))
+    assert eq(max_(a, b), pd.Series([2,2,3]))
+    assert eq(min_(b, a), pd.Series([1,2,2]))
+    assert eq(max_(b, a), pd.Series([2,2,3]))
+
+    b = pd.DataFrame(dict(a=[1,2,3]))
+    assert eq(min_(a, b), pd.DataFrame(dict(a = [1,2,2])))
+    assert eq(max_(a, b), pd.DataFrame(dict(a = [2,2,3])))
+    assert eq(min_(b, a), pd.DataFrame(dict(a = [1,2,2])))
+    assert eq(max_(b, a), pd.DataFrame(dict(a = [2,2,3])))
+
+    b = pd.DataFrame(dict(x=[1,2,3], y = [3,2,1]))
+    assert eq(min_(a, b), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(a, b), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+    assert eq(min_(b, a), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(b, a), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
+
+def test_min_max_with_dataframe():
+    a = pd.DataFrame(dict(a = [2,2,2], b = [2,2,2]))
+    b = pd.DataFrame(dict(x = [1,2,3], y = [3,2,1]))
+    assert eq(min_(a, b), pd.DataFrame(index=[0,1,2]))
+    assert eq(max_(a, b), pd.DataFrame(index=[0,1,2]))
+    a = pd.DataFrame(dict(x = [2,2,2], y = [2,2,2]))
+    assert eq(min_(a, b), pd.DataFrame(dict(x = [1,2,2], y = [2,2,1])))
+    assert eq(max_(a, b), pd.DataFrame(dict(x = [2,2,3], y = [3,2,2])))
 
 
 def test_df_slice_time():

@@ -1156,14 +1156,20 @@ def le_(a, b, join = 'ij', method = None, columns = 'ij'):
 
 def _align_columns(a, b, func):
     da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
-    if da == db or min(da, db) == 0:
+    if min(da, db) == 0:
         return func(a,b)
-    a, b = (a, b) if da == 2 else (b, a)
-    if is_series(b):
+    if da == 2 and db == 2 and list(a.columns) == list(b.columns): # perfect fit, no need to run as_series
+        return func(a,b)        
+    a,b = as_series(a), as_series(b)
+    da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
+    if da == db:       # (1,1) and (2,2)
+        return func(a,b)
+    if is_series(b):   # (2,1)
         b = pd.concat([b] * a.shape[1], axis=1)
         b.columns = a.columns
-    else:
-        b = np.concatenate([b] * a.shape[1], axis=1)
+    elif is_series(a): # (1,2)
+        a = pd.concat([a] * b.shape[1], axis=1)
+        a.columns = b.columns
     return func(a,b)
         
 def _minimum(a, b):
