@@ -1156,7 +1156,7 @@ def le_(a, b, join = 'ij', method = None, columns = 'ij'):
 
 def _align_columns(a, b, func):
     da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
-    if da == db or max(da, db) <= 1:
+    if da == db or min(da, db) == 0:
         return func(a,b)
     a, b = (a, b) if da == 2 else (b, a)
     if is_series(b):
