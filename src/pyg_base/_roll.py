@@ -1,7 +1,7 @@
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._dates import dt
-from pyg_base._pandas import df_slice
+from pyg_base._pandas import df_slice, as_series
 from pyg_base._dictattr import dictattr
 import pandas as pd
 
@@ -22,7 +22,7 @@ def _max(*values):
         return max(values)
 
 def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None,
-            roll = 'roll', expiry = '-1m', n = 1, data = None, cutoff = '-2b', do_if_no_n = True):
+            roll = 'roll', expiry = '-1m', n = 0, data = None, cutoff = '-2b', do_if_no_n = False):
     """
     
     Creates a single timeseries from multiple timeseries data, 
@@ -46,7 +46,7 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
     expiry : str/int, optional
         Relative date to today that determines the expiry of available timeseries, The default is '-1b'.
     n : integer, optional
-        The size of the resulting curve. The default is 1.
+        The size of the resulting curve. The default is 0, which corresponds to a SERIES of size 1
     data : timeseries, optional
         The rolled timeseries, previously calculated . The default is None.
     cutoff : str/int, optional
@@ -63,13 +63,13 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
     --------
     >>> from pyg import * 
     >>> def loader(end_date, value):
-    >>>     return pd.Series(value, drange(-800, min(dt(0), dt(end_date))))
+    >>>     return pd.DataFrame({0:value}, drange(-800, min(dt(0), dt(end_date))))
 
     >>> end_dates = drange(dt(2000,4,0), dt(1000), '3m')
     >>> chain = dictable(value = range(len(end_dates)), end_date = end_dates)
     >>> load_on = None; transform = None; roll = 'roll'; expiry = '-1m'; n = 1; data = None; cutoff = '-1b'
 
-    >>> d = df_roll_off(chain, loader = loader)
+    >>> d = df_roll_off(chain, loader = loader, n = 0)
 
     >>> d.chain ## we roll when data ends
     dictable[51 x 3]
@@ -150,13 +150,18 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
     >>> assert ts.index[-1] == dt('-1b')
 
     """
+    n_ = max(n, 1)
     chain = dictable(chain)
     if roll not in chain.keys():
         chain[roll] = None
     if _data not in chain:
         chain[_data] = None
     data_ok = data is not None and len(data) > 0
-    if data_ok and n == 1:
+
+    if data_ok and n==0:
+        if len(data.shape) == 2:
+            data = as_series(data.iloc[:,0])
+    if data_ok and n==1:
         if len(data.shape) == 2 and data.shape[1] > 1:
             data = data.iloc[:,0]
     if data_ok and n > 1:
@@ -189,7 +194,7 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
     now = dt(0)
     loaded_data = []
     i = j = 0
-    while j < size and i < n:
+    while j < size and i < n_:
         row = chain[j]
         roll_date = row[roll]
         if roll_date is not None and data_cutoff is not None and roll_date < data_cutoff : ## old data
@@ -206,11 +211,11 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
                 i = i + 1
         loaded_data.append(loaded)
         j = j + 1
-    if i < n:
+    if i < n_:
         if do_if_no_n is True:
             raise ValueError(f'there are only {i} dataseries available post cutoff and {n} are required')
         elif callable(do_if_no_n):
-            return do_if_no_n(i, n)
+            return do_if_no_n(i, n_)
 
     if j < size:
         loaded_data.extend([None] * (size - j))
@@ -237,7 +242,9 @@ def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None
     ub = [_min(row[roll], row[_data].index[-1]) for row in c]
     if transform is not None:
         c = c.do(transform, _data)
-    new_data = df_slice(c[_data], ub = ub, openclose = '(]', n = n)
+    new_data = df_slice(c[_data], ub = ub, openclose = '(]', n = n_)
+    if n == 0:
+        new_data = as_series(new_data)
     if old_data is not None and len(old_data) > 0:
         new_data = df_slice(new_data, lb = old_data.index[-1], openclose = '(]')
         res = pd.concat([old_data, new_data])

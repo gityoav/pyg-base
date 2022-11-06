@@ -1373,6 +1373,9 @@ def df_slice(df, lb = None, ub = None, openclose = '(]', n = 1):
         [,] or c : close
         (,) or o : open
         ' ' : do not cut
+    n : int
+        This parameter is used when multiple timeseries are provided. 
+        n determines the number of columns stitched together.
     
     :Returns:
     -------
