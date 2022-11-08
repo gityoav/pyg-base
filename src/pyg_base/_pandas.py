@@ -22,6 +22,7 @@ from pyg_base._dates import dt
 from pyg_base._txt import lower
 import pandas as pd
 import numpy as np
+from functools import partial
 from copy import copy
 import inspect
 import datetime
@@ -1513,7 +1514,8 @@ def df_unslice(df, ub):
     return dict(rs['u', 'ts'])
 
 
-def ts_gap(ts, gap = 'days'):
+
+def ts_gap(ts, gap = 'days', recent = True):
     """
     Calculate the gap going FORWARD in time. The last gap is measured against today
     
@@ -1546,11 +1548,14 @@ def ts_gap(ts, gap = 'days'):
     if gap == 'days':
         days = [(t1-t0).days for t0, t1 in zip(ts[:-1], ts[1:])]
         now = dt(0)
-        if ts[-1] <= now:
-            days.append((dt(0) - ts[-1]).days)
+        if recent:
+            if ts[-1] <= now:
+                days.append((dt(0) - ts[-1]).days)
+            else:
+                days.append(min(days))
+            return pd.Series(days, index = ts)
         else:
-            days.append(min(days))
-        return pd.Series(days, index = ts)
+            return pd.Series(days, index = ts[:-1])
     else:
         raise ValueError(f'pyg_base.ts_gap with gap={gap} not supported')
 
@@ -1584,7 +1589,7 @@ def ts_deal_with_issue(ts, issue_calc, issue_level = 0, deal = 'last'):
     else:
         raise ValueError(f'no idea how to deal with issues {issues} using {deal}')
 
-def ts_degap(ts, max_gap = 0, deal = 'last'):
+def ts_degap(ts, max_gap = 0, deal = 'last', recent = False):
     """
     Parameters
     ----------
@@ -1600,11 +1605,18 @@ def ts_degap(ts, max_gap = 0, deal = 'last'):
     -------
     timeseries
         a timeseries with gap issues handled
+    
 
+    :Example: gaps in recent values do not matter by default
+    ---------
+    >>> from pyg import *
+    >>> ts = pd.Series(1, drange(-1000,-500)) ## old data
+    >>> assert eq(ts_degap(ts, 10), ts)
+    >>> assert len(ts_degap(ts, 10, recent = True)) == 0 # There is no recent data
     """
     
-    return ts_deal_with_issue(ts, issue_calc = ts_gap, issue_level = max_gap, deal = deal)
-    
+    return ts_deal_with_issue(ts, issue_calc = partial(ts_gap, recent = recent), issue_level = max_gap, deal = deal)
+   
 
 def df_drop_index_duplicates(df, keep = 'last'):
     """
