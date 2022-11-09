@@ -593,7 +593,7 @@ class Calendar(Dict, _calendar):
         date = ymd(date)
         return self.dt2int.get(date, self.dt2int[self.adjust(date)])
 
-    def add(self, date, days, adj = None):
+    def add(self, date, days, adj = None, aggregate = 'last'):
         """
         adjustes the start date to a business day. Then add business days on top.
         add will initiate self._populate unless we are bumping date by exactly one day
@@ -606,13 +606,28 @@ class Calendar(Dict, _calendar):
             days to bump.
         adj : str, optional
             adjusting method for date if it isn't a business day to start with.
-
+        aggregate: str/function
+            if adding days to a timeseries, we can get multiple starting dates adding to same date. By default, pick last value
         Returns
         -------
         datetime
             bumped date.
+            
+        Example: aggregating of timeseries data over holidays
+        --------
+        >>> from pyg import * 
+        >>> date = pd.Series(range(10), drange(9)) ## goes over the weekend, so multiple dates will be bumped to Monday
+        >>> cal = calendar()
+        >>> assert len(cal.add(date, 1)) < len(date)
         """
         adj = adj or self.adj
+        if is_ts(date):
+            res = date.copy()
+            res.index = [self.add(t, days, adj = adj) for t in res.index]
+            if len(set(res.index)) < len(res):
+                res.index.name = res.index.name or 'date'
+                res = res.groupby(res.index.name).apply(aggregate)
+            return res            
         t = self.adjust(date, adj)
         if abs(days)>1:
             self._populate()
