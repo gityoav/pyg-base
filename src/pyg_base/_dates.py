@@ -323,7 +323,7 @@ def is_bump(bump):
 
 _bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
 
-def dt_bump(t, *bumps):
+def dt_bump(t, *bumps, aggregate = 'last'):
     """
     :Example:
     ---------
@@ -344,11 +344,21 @@ def dt_bump(t, *bumps):
     >>> assert dt_bump(t, 'spot') == dt(2022, 10, 24)
     >>> assert dt_bump(t, 'o/n') == dt(2022, 10, 25)
     >>> assert dt(t, 't/n') == dt(2022, 10, 26)
+
+    Example: handling non unique dates once bumped
+    --------------------------------------------
+    >>> from pyg import  * 
+    >>> t = pd.Series(range(10), drange(9))
+    >>> assert len(dt_bump(t, '1b')) < len(t) ## we have gone over the weekends and weekends are bumped forward together
+    >>> assert (dt_bump(t, '1b') - dt_bump(t, '1b', aggregate = 'first')).max() == 2 ## 2 days for weekend 
     """
     bumps = as_list(bumps)
     if is_ts(t):
         res = t.copy()
         res.index = [dt_bump(i, *bumps) for i in res.index]
+        if len(set(res.index)) < len(res): 
+            res.index.name = res.index.name or 'date'
+            res = res.groupby(res.index.name).apply(aggregate)
         return res
     t = t if isinstance(t, datetime.datetime) else dt(t)
     if isinstance(t, NaTType):
