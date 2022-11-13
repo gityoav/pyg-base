@@ -257,6 +257,10 @@ def _T(arg):
         return arg.T if isinstance(arg, (np.ndarray, pd.DataFrame)) and len(arg.shape) == 2 else arg
 
 def _values(a):
+    if isinstance(a, (list, tuple)):
+        return type(a)([_values(v) for v in a])
+    elif isinstance(a, dict):
+        return type(a)({k : _values(v) for k,v in a.items()})
     if is_series(a):
         return a.values
     elif is_df(a):
