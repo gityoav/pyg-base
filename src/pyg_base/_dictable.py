@@ -342,7 +342,7 @@ class dictable(Dict):
             item = list(item)
         if isinstance(item , list):
             if len(item) == 0:
-                return dictable(data = [], columns = self.keys())
+                return type(self)(data = [], columns = self.keys())
             elif is_strs(item):
                 return type(self)(super(dictable, self).__getitem__(item))
             elif is_bools(item):
@@ -350,7 +350,7 @@ class dictable(Dict):
                 return res if len(res) else type(self)([], self.keys())
             elif is_ints(item):
                 values = list(zip(*self.values()))
-                return dictable(data = [values[i] for i in item], columns = self.keys())
+                return type(self)(data = [values[i] for i in item], columns = self.keys())
             else:
                 raise ValueError('We dont know how to understand this item %s'%item)
         elif is_int(item):
@@ -824,9 +824,9 @@ class dictable(Dict):
             by = self.keys()
         by = as_tuple(by)
         if len(by) == 0:
-            return dictable({key: [value] for key, value in dict(self).items()})
+            return type(self)({key: [value] for key, value in dict(self).items()})
         xs, ids = self._listby(by)
-        rtn = dictable(xs, by)
+        rtn = type(self)(xs, by)
         rtn.update({k: [[self[k][i] for i in y] for y in ids] for k in self.keys() if k not in by})
         return rtn
     
@@ -919,8 +919,8 @@ class dictable(Dict):
         elif len(by) == len(self.keys()):
             raise ValueError('cannot groupby on all keys... nothing left to group')
         xs,ys = self._listby(by)
-        rtn = dictable(xs, by)
-        rtn[grp] = [dictable({k: [self[k][i] for i in y] for k in self.keys() if k not in by}) for y in ys]
+        rtn = type(self)(xs, by)
+        rtn[grp] = [type(self)({k: [self[k][i] for i in y] for k in self.keys() if k not in by}) for y in ys]
         return rtn
 
     def ungroup(self, grp = 'grp'):
@@ -1010,12 +1010,12 @@ class dictable(Dict):
                     r+=1
                     l+=1
             if len(res) == 0:
-                return dictable([], cols + lkeys + rkeys + jkeys)
+                return type(self)([], cols + lkeys + rkeys + jkeys)
             xs, lids, rids = zip(*res)
             ns = [len(l)*len(r) for l, r in zip(lids, rids)]
-            rtn = dictable(sum([[x]*n for x,n in zip(xs,ns)], []), cols)
+            rtn = type(self)(sum([[x]*n for x,n in zip(xs,ns)], []), cols)
         else:
-            rtn = dictable()
+            rtn = type(self)()
             lids = [range(len(self))]; rids = [range(len(other))]
         for k in lkeys:
             v= self[k]
@@ -1165,7 +1165,7 @@ class dictable(Dict):
         xys, ids = self._listby(xykeys)
         zs = self[z]
         y_ = y if is_str(y) else '_columns'
-        rs = dictable(xys, x + (y_,))        
+        rs = type(self)(xys, x + (y_,))        
         ys = rs[as_list(y_)].listby(y_)
         y2id = dict(zip(ys[y_], range(len(ys))))
         xs, yids = rs._listby(x)
@@ -1179,8 +1179,8 @@ class dictable(Dict):
                     for a in agg:
                         value = a(value)
                 res[i][k] = value
-        dx = dictable(xs, x)
-        dy = dictable(res, y2id.keys())
+        dx = type(self)(xs, x)
+        dy = type(self)(res, y2id.keys())
         dx.update(dy)
         return dx
     
@@ -1220,7 +1220,7 @@ class dictable(Dict):
         ycols = as_tuple(ycols)
         n = len(ycols)
 
-        res = dictable({k: sum([[row[k]]*n for row in self], []) for k in xcols})
+        res = type(self)({k: sum([[row[k]]*n for row in self], []) for k in xcols})
         res[y] = ycols * len(self)
         res[z] = sum([[row[ycol] for ycol in ycols] for row in self], [])
         return res
