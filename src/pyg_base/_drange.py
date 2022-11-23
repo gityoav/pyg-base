@@ -556,6 +556,8 @@ class Calendar(Dict, _calendar):
                 return self.adjust(date, 'p')
             else:
                 return t
+        else:
+            raise ValueError(f'date adjustment {adj} must start with f(ollowing), p(revious) or m(odified)')
 
     def dt_bump(self, t, bump, adj = None):
         """
@@ -581,7 +583,11 @@ class Calendar(Dict, _calendar):
                 bmp = period.search(bump).group().lower()
                 bump = bump[len(bmp):]
                 if bmp.endswith('b'):
-                    t = self.add(t, int(bmp[:-1]))
+                    if bmp == '+0b':
+                        t = self.adjust(t, adj = 'f')
+                    elif bmp == '-0b':
+                        t = self.adjust(t, adj = 'p')                        
+                    t = self.add(t, int(bmp[:-1]), adj = adj)
                 else:
                     t = dt_bump(t, bmp)
             return t
@@ -600,7 +606,7 @@ class Calendar(Dict, _calendar):
 
         Parameters
         ----------
-        date : datetime
+        date : datetime or timeseries
             start date.
         days : int
             days to bump.

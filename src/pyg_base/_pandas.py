@@ -11,7 +11,7 @@ We then need to worry about multiple columns if there are. If none, each timeser
 If there are multiple columns, we will perform the calculations columns by columns. 
 
 """
-from pyg_base._types import is_df, is_str, is_num, is_ts, is_series, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
+from pyg_base._types import is_df, is_str, is_bool, is_num, is_ts, is_series, is_tss, is_int, is_arr, is_ts, is_arrs, is_tuples, is_pd, is_date
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
@@ -1196,7 +1196,11 @@ def max_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     dfs = df_sync(dfs, join = join, method = method, columns = columns)
     return reducer(_maximum, dfs)
 
-def mask2v(df, mask = np.nan, value = 0.0):
+def mask2v(df, mask = np.nan, value = 0.0):        
+    if is_num(df):
+        if not is_bool(mask):
+            mask = _mask(df, mask)            
+        return value if mask else df
     if not is_pd(mask):
         mask = _mask(df, mask)
     res = df.copy()
@@ -1237,6 +1241,8 @@ def df_sum(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan
     ----------
     >>> a = pd.DataFrame(dict(a = [1, 2], b = [np.nan, np.nan], c = [1, 2.]))
     >>> b = pd.DataFrame(dict(a = [np.nan,2], b = [2, np.nan]))
+    >>> c = 5; d = np.nan
+    >>> df_sum(a = c, b = d)    
     >>> df_sum(a,b)
     
          a    b    c
@@ -1250,6 +1256,8 @@ def df_sum(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan
     clean_dfs = [mask2v(df, mask, 0.0) for df, mask in zip(dfs, masks)]
     res = sum(clean_dfs)
     n = sum([~mask for mask in masks])
+    if is_num(n): 
+        return np.nan if n == 0 else res
     res[n == 0] = np.nan
     return res       
         
@@ -1276,6 +1284,8 @@ def df_mean(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.na
     clean_dfs = [mask2v(df, mask, 0.0) for df, mask in zip(dfs, masks)]
     res = sum(clean_dfs)
     n = sum([~mask for mask in masks])
+    if is_num(n): 
+        return np.nan if n == 0 else res/n
     n[n == 0] = np.nan
     return res / n
 
@@ -1303,6 +1313,8 @@ def df_std(a, b = None, join = 'oj', method = None, columns = 'oj', exc = np.nan
     m1 = sum(clean_dfs)
     m2 = sum([df**2 for df in clean_dfs])
     n = sum([~mask for mask in masks])
+    if is_num(n): 
+        return np.nan if n<2 else (m2/n - (m1/n)**2) ** 0.5
     n[n < 2] = np.nan
     return (m2/n - (m1/n)**2) ** 0.5
 
