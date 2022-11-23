@@ -6,7 +6,6 @@ from pyg_base._inspect import getargs
 from pyg_base._eq import in_
 from copy import copy
 
-_postprocess = '_postprocess'
 
 __all__ = ['Dict', 'dict_invert', 'items_to_tree', 'tree_items', 'tree_keys', 'tree_values', 'tree_update', 'tree_setitem', 'tree_getitem', 'tree_get']
 
