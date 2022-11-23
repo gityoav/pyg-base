@@ -6,7 +6,7 @@ from pyg_base._inspect import getargs
 from pyg_base._eq import in_
 from copy import copy
 
-
+_postprocess = '_postprocess'
 
 __all__ = ['Dict', 'dict_invert', 'items_to_tree', 'tree_items', 'tree_keys', 'tree_values', 'tree_update', 'tree_setitem', 'tree_getitem', 'tree_get']
 
@@ -34,7 +34,27 @@ class Dict(dictattr):
     
     >>> assert d(c = 3) == Dict(a = 1, b = 2) + Dict(c = 3)
     >>> assert Dict(a = 1)(b = lambda a: a+1)(c = lambda a,b: a+b) == Dict(a = 1,b = 2,c = 3)
+    
+
+    :Example: support for post-processing
+    ---------
+    This is a rather convoluted example but is actually useful...
+    
+    from pyg import * 
+    class PDict(Dict):
+        def _postprocess(self, k, v):
+            if isinstance(v, dictattr):
+                return v + dict(key = k, pk = self.get('pk'))
+            else:
+                return v
+    d = PDict(a = 1, b = 2)
+    d = d(c = lambda b: Dict(b = b**2))
+    assert d.c == {'b': 4, 'key': 'c', 'pk': None}
+    
     """
+    def _postprocess(self, key, value):
+        return value
+    
     def __getitem__(self, value):
         if callable(value):
             return self.apply(value)
@@ -44,6 +64,10 @@ class Dict(dictattr):
     def apply(self, function):
         return kwargs_support(function)(**self)
     
+    
+    def copy(self):
+        return copy(self)
+
     def __call__(self, **kwargs):
         res = self.copy()
         res.update({key : value for key, value in kwargs.items() if not callable(value)})
@@ -55,10 +79,10 @@ class Dict(dictattr):
                 raise ValueError('circular function calling')
             else:
                 for key, value in independent.items():
-                    res[key] = res[value]
+                    res[key] = self._postprocess(key, res[value])
                 callables = {key: value for key, value in callables.items() if not key in independent}
         for key, value in callables.items():
-            res[key] = res[value]
+            res[key] = self._postprocess(key, res[value])
         return res
     
     def __add__(self, other):
