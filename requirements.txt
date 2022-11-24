@@ -2,4 +2,5 @@ numpy
 scipy
 pandas
 jsonpickle
+openpyxl
 pyg-npy

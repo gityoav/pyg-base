@@ -14,6 +14,7 @@ from pyg_base._cache import cache
 from pyg_base._logger import logger
 from pyg_npy import pd_read_npy
 from functools import reduce
+
 import pandas as pd
 import re
 
@@ -297,6 +298,8 @@ class dictable(Dict):
         kwargs = {str(key) if is_int(key) else key : value * n if len(value)==1 else value for key, value in kwargs.items()}
         super(dictable, self).__init__(kwargs)
         
+    _dict = Dict
+
     def __len__(self):
         return lens(*self.values())
     
@@ -316,7 +319,7 @@ class dictable(Dict):
         
     def __iter__(self):
         for row in zip(*self.values()):
-            yield Dict(zip(self.keys(), row))
+            yield self._dict(zip(self.keys(), row))
             
     def update(self, other):
         for k, v in other.items():
@@ -354,7 +357,7 @@ class dictable(Dict):
             else:
                 raise ValueError('We dont know how to understand this item %s'%item)
         elif is_int(item):
-            return Dict({key : value[item] for key, value in self.items()})
+            return self._dict({key : value[item] for key, value in self.items()})
         elif item in self.keys():
             return super(dictable, self).__getitem__(item)
         elif is_tuple(item):
