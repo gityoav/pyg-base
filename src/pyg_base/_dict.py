@@ -173,6 +173,7 @@ def _tree_setitem(tree, item, base, ignore, types):
         return
     else:
         res[item[-2]] = item[-1]
+    
 
 def tree_setitem(tree, key, value, ignore = None, types = None):
     """
