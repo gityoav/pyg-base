@@ -26,7 +26,6 @@ def table_to_tree(tree, pattern, table, base = dictattr, ignore = None, types = 
     
     {'markets': {'TY': {'weight': 0.3}, 'ES': {'weight': 0.7}}}
     
-    
     """
     types = _tree_types(types)
     ignore = as_list(ignore)
