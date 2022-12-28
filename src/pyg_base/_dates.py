@@ -74,6 +74,24 @@ def is_tz(tzinfo):
     return isinstance(tzinfo, (tzfile, pytz.tzfile.DstTzInfo))
 
 
+
+def tz_replace(t, tzinfo = None):
+    """
+    this REPLACES the tzinfo while not changing the value of the underlying data
+    """
+    tz = as_tz(tzinfo)
+    if isinstance(t, (pd.DataFrame, pd.Series)):
+        return t.tz_localize(None).tz_localize(tz)
+    elif is_date(t):
+        return t.replace(tzinfo = tz)
+    elif isinstance(t, list):
+        return type(t)([tz_replace(i, tz) for i in t])
+    elif isinstance(t, dict):
+        return type(t)({key : tz_replace(value, tz) for key, value in t.items()})
+    else:
+        return dt(t, tzinfo = tzinfo)
+
+        
 def tz_convert(t, tzinfo = None):
     """
     
@@ -95,37 +113,23 @@ def tz_convert(t, tzinfo = None):
 
     """
     if tzinfo is None:
-        ## we remove tzinfo
-        if isinstance(t, (pd.DataFrame, pd.Series)):
-            if t.index.tz is None:
-                return t
-            else:
-                res = t.copy()
-                res.index = [date.replace(tzinfo = None) for date in res.index]
-                return res
-        elif is_date(t):
-            return t if t.tzinfo is None else t.replace(tzinfo = None)
-        elif isinstance(t, list):
-            return type(t)([tz_convert(i, tzinfo) for i in t])
-        elif isinstance(t, dict):
-            return type(t)({key : tz_convert(value, tzinfo) for key, value in t.items()})
-        else:
-            return dt(t, tzinfo = tzinfo)
+        return tz_replace(t)
     if isinstance(t, list):
         return type(t)([tz_convert(i, tzinfo) for i in t])
     elif isinstance(t, dict):
         return type(t)({key : tz_convert(value, tzinfo) for key, value in t.items()})
     if isinstance(t, (pd.DataFrame, pd.Series)):
+        tzinfo = as_tz(tzinfo)
         res = t.copy()
         if t.index.tz is None:
-            res.index = res.index.tz_localize(as_tz(tzinfo))
+            res.index = res.index.tz_localize(tzinfo)
         else:
-            res.index = res.index.tz_convert(as_tz(tzinfo))
+            res.index = res.index.tz_convert(tzinfo)
         return res
     elif is_date(t):
         return t.astimezone(as_tz(tzinfo))
     else:
-        return dt(t, tzinfo)
+        return dt(t, tzinfo = tzinfo)
 
 def today(date = None):
     now = date or datetime.datetime.now()
@@ -453,6 +457,45 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     >>> assert dt(2000,'h', 1) == datetime.datetime(2000,3,1) # future codes
 
 
+    Timezone handling.
+    ------------------
+    NOTE: dt() and dt_bump() differ in the handling.
+
+    if tzinfo is provided, 
+        - dt will tz_replace, WITHOUT CHANGING DATE.
+        - the only exception is dt(tzinfo) which will give you the time right now, in the local tzinfo
+    
+    if tzinfo is None, 
+        - dt will NOT touch the timezone information and will not remove it. i.e. dt(t) will leave t's timezone intact
+        - if you want to remove tzinfo, use tz_replace(date)
+        
+    
+    Example: construction of time now in different timezones
+    --------
+    >>> assert dt(tzinfo = 'EST').hour == dt(tzinfo = 'CST').hour % 24 + 1
+
+    Example: dt does not drop input timezone if tzinfo
+    --------
+    >>> tz = as_tz('EST')
+    >>> t = dt(tz)
+    >>> assert dt(t).tzinfo == tz
+    >>> assert dt(t, '1h').tzinfo == tz
+    >>> assert dt(t, 1).tzinfo == tz
+
+    >>> t = dt(pd.Series(1, drange(10)), tzinfo = tz)
+    >>> assert dt(t, '1h').index[0].tzinfo == tz
+    
+    Example: dt REPLACES rather than bumps if a tzinfo is provided
+    --------
+    >>> jerusalem = as_tz('jerusalem')
+    >>> london = as_tz('london')
+    >>> j = dt(pd.Series(1, drange(10)), tzinfo = jerusalem)
+    >>> assert set(j.index.hour) == {0}
+    >>> l = dt(j, tzinfo = london)
+    >>> assert set(l.index.hour) == {0} ## the hours have not been bumped
+    >>> l = dt_bump(j, london)
+    >>> assert set(l.index.hour) == {22} ## the hours bumped two hours back
+
     :Example: date as offset from today
     -----------------------------------
     >>> today = dt(0); 
@@ -490,22 +533,26 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     
     """
     args = as_list(args)
+    if tzinfo is None and len(args) and is_tz(args[-1]):
+        tzinfo = args[-1]; args = args[:-1]    
     if len(args) == 0:
         res = none() if callable(none) else none
         return tz_convert(res, tzinfo)
     t = args[0]
     if isinstance(t, np.datetime64):
-        t = tz_convert(np2dt(t), tzinfo)
+        t = np2dt(t)
+        if tzinfo:
+            t = tz_replace(t, tzinfo)
     elif isinstance(t, NaTType):
         return NaT
     elif isinstance(t, datetime.date) and not isinstance(t, datetime.datetime):
         t = datetime.datetime(t.year, t.month, t.day, tzinfo = as_tz(tzinfo))
     elif is_ts(t):
-        return dt_bump(t, *args[1:])
+        res = dt_bump(t, *args[1:])
+        return res if tzinfo is None else tz_replace(res, tzinfo)
     if isinstance(t, datetime.datetime):
-        return reduce(dt_bump, args[1:], tz_convert(t, tzinfo))
-    if tzinfo is None and is_tz(args[-1]):
-        tzinfo = args[-1]; args = args[:-1]    
+        res = reduce(dt_bump, args[1:], t)
+        return res if tzinfo is None else tz_replace(res, tzinfo)
     if len(args) == 1:
         if t is None:
             return tz_convert(none(), tzinfo) if callable(none) else none
@@ -513,7 +560,7 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
             if is_nan(t):
                 return tz_convert(none(), tzinfo) if callable(none) else none
             else:                
-                return tz_convert(num2dt(t), tzinfo)
+                return tz_replace(num2dt(t), tzinfo)
         elif is_bump(t):
             return dt_bump(dt(0, tzinfo = tzinfo), t)
         elif is_str(t):
@@ -524,16 +571,17 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     elif len(args) == 2:
         y,m = ym(*args)
         return datetime.datetime(y,m,1, tzinfo = as_tz(tzinfo))
-
     y,m,d = args[:3]
     t = _ymd(y,m,d)
     if len(args) == 4 and is_str(args[3]):
-        return tz_convert(nth_weekday_of_month(*args), tzinfo)
+        return tz_replace(nth_weekday_of_month(*args), tzinfo)
     if len(args) > 3:
         args = [int(a) for a in args[3:]] + [0,0,0]
-        return tz_convert(t + datetime.timedelta(hours = args[0], minutes = args[1], seconds = args[2]), tzinfo)
+        res = t + datetime.timedelta(hours = args[0], minutes = args[1], seconds = args[2])
+        return res if tzinfo is None else tz_replace(res, tzinfo)
     else:
-        return tz_convert(t, tzinfo)
+        res = t
+        return res if tzinfo is None else tz_replace(res, tzinfo)
 
 
 def nth_weekday_of_month(y, m, n, w):
