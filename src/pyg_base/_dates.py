@@ -41,15 +41,20 @@ def tzones():
     tzs  = {key : tz.gettz(value) for key, value in tzs.items()}
     t = datetime.datetime.now()
     tzs.update({v.tzname(t): v for v in tzs.values() if v is not None})
+    tzs['DE']  = tzs['berlin'] # in pytz both 'Europe/Berlin', 'Europe/Busingen' are listed by Germany only has one timezone
     tzs['WET'] = tzs['western european'] = tzs['MA'] # Malta
     tzs['EET'] = tzs['eastern european'] = tzs['GR']
     tzs['CET'] = tzs['cental european'] = tzs['AT'] # austria
-    tzs['EST'] = tzs['eastern standard'] = tzs['new york']
-    tzs['CST'] = tzs['central standard'] = tzs['chicago']
+    tzs['EST'] = tzs['ET'] = tzs['eastern standard'] = tzs['new york']
+    tzs['CST'] = tzs['CT'] = tzs['central standard'] = tzs['chicago']
+    tzs['UTC'] = tzs['utc'] = pytz.timezone('UTC')
     tzs['greenwich mean time'] = tzs['GMT']
     return tzs
 
 def as_tz(tzinfo):
+    """
+    can use any country iso
+    """
     if is_str(tzinfo):
         zones = tzones()
         if tzinfo in zones:
@@ -63,23 +68,29 @@ def as_tz(tzinfo):
     else:
         return tzinfo
 
+
+def is_tz(tzinfo):
+    return isinstance(tzinfo, (du.zoneinfo.tzfile, pytz.tzfile.DstTzInfo))
+
+
 def tz_convert(t, tzinfo = None):
     """
-    if tzinfo is None: drops all timezone data
-    if tzinfo is not None: converts/localize the existing date to 
     
-
     Parameters
     ----------
-    t : TYPE
-        DESCRIPTION.
-    tzinfo : TYPE, optional
-        DESCRIPTION. The default is None.
+    t : date, timeseries
+        if t is a timeseries, will use panda tz_localize or tz_convert
+    tzinfo : None/str/timezone, optional
+        tzinfo that as_tz() can work with. The default is None: remove all tz info
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
+    t converted to timezone
+    If tzinfo is None: drops all timezone data
+    If tzinfo is not None: converts/localize the existing date to timezone, depending if original data has tz info
+
+    Example
+    --------
 
     """
     if tzinfo is None:
@@ -133,12 +144,8 @@ def month(m):
     :Parameters:
     ----------------
     m : str/int
-        DESCRIPTION.    
+        month as integer or Futures code.    
 
-    Raises
-    ------
-    ValueError
-        DESCRIPTION.
 
     :Returns:
     -------
@@ -351,6 +358,8 @@ def dt_bump(t, *bumps, aggregate = 'last'):
     >>> t = pd.Series(range(10), drange(9))
     >>> assert len(dt_bump(t, '1b')) < len(t) ## we have gone over the weekends and weekends are bumped forward together
     >>> assert (dt_bump(t, '1b') - dt_bump(t, '1b', aggregate = 'first')).max() == 2 ## 2 days for weekend 
+    
+    t = dt(0); bumps = ('1h',)
     """
     bumps = as_list(bumps)
     if is_ts(t):
@@ -404,9 +413,11 @@ def dt_bump(t, *bumps, aggregate = 'last'):
                     t += DAY * d
             if len(bump):
                 try:
-                    t = tz_convert(t, bump)
+                    return tz_convert(t, bump)
                 except Exception:
                     raise ValueError('%s is not a period I know...'%bump)
+        elif is_tz(bump):
+            t = tz_convert(t, bump)
         else:
             t = t + bump
     return t
@@ -492,6 +503,8 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
         return dt_bump(t, *args[1:])
     if isinstance(t, datetime.datetime):
         return reduce(dt_bump, args[1:], tz_convert(t, tzinfo))
+    if tzinfo is None and is_tz(args[-1]):
+        tzinfo = args[-1]; args = args[:-1]    
     if len(args) == 1:
         if t is None:
             return tz_convert(none(), tzinfo) if callable(none) else none
@@ -510,6 +523,7 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     elif len(args) == 2:
         y,m = ym(*args)
         return datetime.datetime(y,m,1, tzinfo = as_tz(tzinfo))
+
     y,m,d = args[:3]
     t = _ymd(y,m,d)
     if len(args) == 4 and is_str(args[3]):

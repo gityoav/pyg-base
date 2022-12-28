@@ -8,7 +8,6 @@ from copy import copy
 
 
 __all__ = ['Dict', 'dict_invert', 'items_to_tree', 'tree_items', 'tree_keys', 'tree_values', 'tree_update', 'tree_setitem', 'tree_getitem', 'tree_get']
-
     
 class Dict(dictattr):
     """
@@ -51,6 +50,8 @@ class Dict(dictattr):
     assert d.c == {'b': 4, 'key': 'c', 'pk': None}
     
     """
+    _key = 'key'
+
     def _postprocess(self, key, value):
         return value
     
@@ -60,8 +61,11 @@ class Dict(dictattr):
         else:
             return super(Dict, self).__getitem__(value)
     
-    def apply(self, function):
-        return kwargs_support(function)(**self)
+    def apply(self, function, **default_params):
+        """
+        we allow default params but internal values will trump them
+        """
+        return kwargs_support(function)(**(default_params|self))
     
     
     def copy(self):
@@ -78,10 +82,10 @@ class Dict(dictattr):
                 raise ValueError('circular function calling')
             else:
                 for key, value in independent.items():
-                    res[key] = self._postprocess(key, res[value])
+                    res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
                 callables = {key: value for key, value in callables.items() if not key in independent}
         for key, value in callables.items():
-            res[key] = self._postprocess(key, res[value])
+            res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
         return res
     
     def __add__(self, other):

@@ -593,9 +593,9 @@ class dictable(Dict):
         return res
 
     
-    def apply(self, function):
+    def apply(self, function, **default_params):
         f = kwargs_support(function)
-        return [f(**row) for row in self]
+        return [f(**(default_params|row)) for row in self]
 
     def do(self, function, *keys):
         """
