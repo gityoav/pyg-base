@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import datetime
-from pyg_base import df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex, min_, max_
+from pyg_base import shape, df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex, min_, max_
 from operator import add, itruediv, sub, mul, pow
+from pyg_base._pandas import _align_columns
 
 def test_df_slice():
     df = pd.Series(np.random.normal(0,1,1000), drange(-999, 2000))
@@ -221,3 +222,21 @@ def test_sub_column_names_for_df():
         assert isinstance(res, pd.DataFrame)
         assert list(res.columns) == [0]
     
+
+def test_align_columns():
+    As = [1, 
+          np.array([1.,1.]),
+          np.array([1.,1.]).reshape((2,1)),
+          np.array([[1.,1.],[1.,1.]]),
+          pd.Series([1.,1.]),
+          pd.DataFrame(dict(a = [1,1], b = [1,1]))
+          ]
+          
+    Bs = As
+    for a in As:
+        for b in Bs:
+            res = max_(a,b)
+            assert len(shape(res)) == max(len(shape(a)), len(shape(b)))
+            res = min_(a,b)
+            assert len(shape(res)) == max(len(shape(a)), len(shape(b)))
+            

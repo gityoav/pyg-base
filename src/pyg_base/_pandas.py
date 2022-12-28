@@ -1155,25 +1155,45 @@ def le_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     return _le_(a,b, join = join, method = method, columns = columns)
 
-def _align_columns(a, b, func):
+def _align_columns(a, b, func = None):
     da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
     if min(da, db) == 0:
         return func(a,b)
-    if da == 2 and db == 2 and list(a.columns) == list(b.columns): # perfect fit, no need to run as_series
+    if da == 2 and db == 2:
+        if a.shape[1] == b.shape[1]:
+            return func(a,b)        
+        if a.shape[1] == 1:
+            if is_df(a):
+                a = pd.concat([a] * b.shape[1], axis=1)
+                if is_pd(b):
+                    a.columns = b.columns
+            else:
+                a = np.concatenate([a] * b.shape[1], axis=1)
+        elif b.shape[1] == 1:
+            if is_df(b):
+                b = pd.concat([b] * a.shape[1], axis=1)
+                if is_pd(a):
+                    b.columns = a.columns
+            else:
+                a = np.concatenate([a] * b.shape[1], axis=1)
         return func(a,b)        
     a,b = as_series(a), as_series(b)
     da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
     if da == db:       # (1,1) and (2,2)
         return func(a,b)
-    if db == 1:   # (2,1)
+    if is_series(b):   # (2,1)
         b = pd.concat([b] * a.shape[1], axis=1)
-        if is_df(b):
+        if is_pd(a):
             b.columns = a.columns
-    elif da == 1: # (1,2)
+    elif db == 1 and is_arr(b):
+        b = np.concatenate([b.reshape((b.shape[0], 1))] * a.shape[1], axis=1)
+    elif is_series(a): # (1,2)
         a = pd.concat([a] * b.shape[1], axis=1)
-        if is_df(a):
+        if is_pd(b):
             a.columns = b.columns
-    return func(a,b)
+    elif da == 1 and is_arr(a):
+        a = np.concatenate([a.reshape((a.shape[0], 1))] * b.shape[1], axis=1)
+    return func(a,b) if func else (a,b)
         
 def _minimum(a, b):
     return _align_columns(a, b, np.minimum)
