@@ -10,6 +10,7 @@ from dateutil import parser
 from functools import reduce, partial
 import dateutil as du
 from dateutil import tz
+from dateutil.zoneinfo import tzfile
 from pytz import country_timezones
 import pytz
 
@@ -70,7 +71,7 @@ def as_tz(tzinfo):
 
 
 def is_tz(tzinfo):
-    return isinstance(tzinfo, (du.zoneinfo.tzfile, pytz.tzfile.DstTzInfo))
+    return isinstance(tzinfo, (tzfile, pytz.tzfile.DstTzInfo))
 
 
 def tz_convert(t, tzinfo = None):
