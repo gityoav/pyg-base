@@ -239,4 +239,8 @@ def test_align_columns():
             assert len(shape(res)) == max(len(shape(a)), len(shape(b)))
             res = min_(a,b)
             assert len(shape(res)) == max(len(shape(a)), len(shape(b)))
-            
+
+def test_reindex_unindexable():
+    for t in [1, 'not a pd', dt(4)]:
+        assert df_reindex(t,  [dt(9), 'whatever']) == t
+    
