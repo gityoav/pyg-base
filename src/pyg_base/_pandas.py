@@ -443,14 +443,12 @@ def df_reindex(ts, index = None, method = None, limit = None):
     >>> assert eq(res[0], tss[0])
 
     """
-    if index is None or not (is_pd(ts) or is_arr(ts)):
+    if index is None:
         return ts
     elif is_str(index):
         index = df_index(ts, index)
     elif is_ts(index):
         index = index.index
-    elif is_arr(index):
-        index = pd.Index(index)
     return _df_reindex(ts, index = index, method = method, limit = limit)
 
 
