@@ -304,7 +304,7 @@ def uk2dt(t, tzinfo = None):
             raise ValueError('date %s is not in UK date format'%t)
     elif yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
         res = datetime.datetime(res.year, res.month, 1)
-    return tz_convert(res, tzinfo)
+    return tz_replace(res, tzinfo)
 
 
 def us2dt(t, tzinfo = None):
@@ -319,7 +319,7 @@ def us2dt(t, tzinfo = None):
         raise ValueError('the date is not in US format')
     if yyyymm.search(t) is not None or yyyymmm.search(t) is not None:
         res = datetime.datetime(res.year, res.month, 1)
-    return tz_convert(res, tzinfo)
+    return tz_replace(res, tzinfo)
 
 def none2dt(none = datetime.datetime.now):
     if callable(none):
@@ -564,7 +564,8 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
         elif is_bump(t):
             return dt_bump(dt(0, tzinfo = tzinfo), t)
         elif is_str(t):
-            return uk2dt(t, tzinfo = tzinfo) if dialect == 'uk' else us2dt(t, tzinfo = tzinfo)
+            res = uk2dt(t) if dialect == 'uk' else us2dt(t)
+            return res if tzinfo is None else tz_replace(res, tzinfo)    
                 # return int2dt(int(t)) + datetime.timedelta(float(t) % 1)
         else:
             raise ValueError('date format unrecognised %s'%t)
