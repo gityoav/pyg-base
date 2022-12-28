@@ -1165,12 +1165,14 @@ def _align_columns(a, b, func):
     da, db = [len(getattr(x, 'shape', ())) for x in (a,b)]
     if da == db:       # (1,1) and (2,2)
         return func(a,b)
-    if is_series(b):   # (2,1)
+    if db == 1:   # (2,1)
         b = pd.concat([b] * a.shape[1], axis=1)
-        b.columns = a.columns
-    elif is_series(a): # (1,2)
+        if is_df(b):
+            b.columns = a.columns
+    elif da == 1: # (1,2)
         a = pd.concat([a] * b.shape[1], axis=1)
-        a.columns = b.columns
+        if is_df(a):
+            a.columns = b.columns
     return func(a,b)
         
 def _minimum(a, b):
