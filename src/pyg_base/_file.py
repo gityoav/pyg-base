@@ -1,9 +1,5 @@
 import os
-import shutil
-import re
-from pyg_base._logger import logger
 from pyg_npy import mkdir, path_name, path_dirname, path_join
-import subprocess
 import csv
 
 __all__ = ['path_name', 'path_dirname', 'path_join', 'mkdir', 'read_csv']
@@ -20,3 +16,87 @@ def read_csv(path, errors = 'replace', **fmt):
         reader = csv.reader(f, **fmt)
         data = list(reader)
     return data
+
+
+def dictdir(path, level = 0):
+    """
+    returns a tree like structure where the leaf of each node is the path. 
+
+    Parameters:
+    -----------
+    path: str
+        initial path to os.listdir
+    
+    level: int
+        how many levels for the subdir to explore
+        
+    Returns:
+    --------
+    tree
+    
+    Example
+    -------
+    >>> path = 'c:/'
+    >>> assert list(dictdir(path,0)) == os.listdir(path)
+    
+    >>> dictdir(path)
+
+    {'conda': 'c:/conda',
+     'data': 'c:/data',
+     'Dell': 'c:/Dell',
+     'Documents and Settings': 'c:/Documents and Settings',
+     'github': 'c:/github',
+     'Program Files': 'c:/Program Files',
+     'Program Files (x86)': 'c:/Program Files (x86)',
+     'ProgramData': 'c:/ProgramData',
+     'Users': 'c:/Users',
+     'Windows': 'c:/Windows',}
+
+
+    Example:
+    --------
+    I keep my barchart trading data here, for each ticker there are multiple futures expiring at different year & month
+
+    >>> path = 'C:/Users/Dell/Dropbox/Yoav/TradingData/bc'
+    >>> res = dictdir(path,3)
+
+
+    We can now easily query the data: Here is where I keep all the intraday files:
+
+    >>> dictable(res, '%ticker/%y/%m/intraday/%path')[['ticker','y','m','path']]
+    
+    dictable[6194 x 4]
+    ticker     |y   |m|path                                              
+    1UA Index |2023|F|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\1UA Inde
+    1UA Index |2023|G|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\1UA Inde
+    2UA Index |2023|F|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\2UA Inde
+    ...3823 rows...
+    ZWPA Index|2025|M|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZWPA Ind
+    ZWPA Index|2025|U|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZWPA Ind
+    ZWPA Index|2025|Z|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZWPA Ind
+
+
+    ... and here is where I keep all the end-of-day files:
+        
+    >>> dictable(res, '%ticker/%y/%m/eod/%path')[['ticker','y','m','path']]
+
+    dictable[6182 x 4]
+    ticker     |y   |m|path                                              
+    1UA Index  |2023|F|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\1UA Inde
+    1UA Index  |2023|G|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\1UA Inde
+    2UA Index  |2023|F|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\2UA Inde
+    ...6182 rows...
+    ZZPA Comdty|2023|V|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZZPA Com
+    ZZPA Comdty|2023|X|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZZPA Com
+    ZZPA Comdty|2023|Z|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZZPA Com
+
+    """
+    res = {x : os.path.join(path, x) for x in os.listdir(path)}
+    if level>0:
+        res = {k : dictdir(v, level = level-1) if os.path.isdir(v) else v for k, v in res.items()}
+    return res
+
+
+
+
+

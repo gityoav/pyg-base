@@ -426,7 +426,7 @@ class Calendar(Dict, _calendar):
             else:
                 return False
 
-    def trade_date(self, date = None, adj = None, day_start = None, day_end = None):
+    def trade_date(self, date = None, adj = 'f', day_start = None, day_end = None):
         """
         This is very similar for adjust, but it also takes into account the time of the day.
         if day_start = 0 and day_end = 23:59:59 then this is exactly adjust.
@@ -481,7 +481,7 @@ class Calendar(Dict, _calendar):
         if day_end >= day_start:
             res = self.adjust(day, adj)
             if tod > day_end: # post today trading session
-                if adj == 'f':
+                if adj in 'mf':
                     if res > day:
                         return res
                     else:
@@ -489,7 +489,7 @@ class Calendar(Dict, _calendar):
                 elif adj == 'p':
                     return res
             elif tod < day_start: # pre today session
-                if adj == 'f':
+                if adj in 'mf':
                     return res
                 elif adj == 'p':
                     if res < day:
@@ -508,7 +508,7 @@ class Calendar(Dict, _calendar):
                 return res
             else: # we are in post-session
                 res = self.adjust(day, adj)
-                if adj == 'f':
+                if adj in 'mf':
                     if res > day:
                         return res
                     else:

@@ -11,7 +11,7 @@ from pyg_base._dictattr import dictattr, relabel, getattrs
 from pyg_base._dictable import dictable, dict_concat, is_dictable
 from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time
 from pyg_base._eq import eq, in_
-from pyg_base._file import read_csv
+from pyg_base._file import read_csv, dictdir
 from pyg_base._getitem import getitem, callitem, callattr
 from pyg_base._inspect import getargspec, getargs, getcallargs, getcallarg, call_with_callargs, argspec_defaults, argspec_required, argspec_update, argspec_add, kwargs2args
 from pyg_base._interp import interpolate
