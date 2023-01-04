@@ -1659,3 +1659,42 @@ def df_drop_index_duplicates(df, keep = 'last'):
     return df.iloc[ts.index]
 
     
+@loop(list, dict, tuple)
+def _sf(x, n=1):
+    if is_num(x) or is_pd(x) or is_arr(x):
+        sign = np.sign(x)
+        x = abs(x)
+        if is_num(x): 
+            if x == 0:
+                return x
+        else:
+            mask = x == 0
+            x[mask] = np.nan
+        scale = 10 ** np.round(np.log10(x),0)
+        res = sign * scale * np.round(x / scale, n)
+        if not is_num(x):
+            res[mask] = 0.
+        return res
+    else:
+        return x
+
+def sf(x, n = 1):
+    """
+    x rounded to n significant figures
+    
+    Parameters:
+    -----------
+    x: number, array or pandas dataframe/series
+        number
+
+    n: significant figures    
+
+    Example:
+    --------
+    >>> xs = [2.3455, -1.354, 0.0, np.array([2.3455, -1.354, 0.0]), pd.Series([2.3455, -1.354, 0.0]), None, 'nothing']
+    >>> assert eq(sf(xs,1), [2.3, -1.4, 0.0, np.array([2.3, -1.4, 0.0]), pd.Series([2.3, -1.4, 0.0]), None, 'nothing'])
+    >>> assert eq(sf(xs,2), [2.35, -1.35, 0.0, np.array([2.35, -1.35, 0.0]), pd.Series([2.35, -1.35, 0.0]), None, 'nothing'])
+    
+    """
+    return _sf(x, n = n)
+    
