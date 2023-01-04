@@ -34,26 +34,10 @@ class Dict(dictattr):
     >>> assert Dict(a = 1)(b = lambda a: a+1)(c = lambda a,b: a+b) == Dict(a = 1,b = 2,c = 3)
     
 
-    :Example: support for post-processing
-    ---------
-    This is a rather convoluted example but is actually useful...
-    
-    from pyg import * 
-    class PDict(Dict):
-        def _postprocess(self, k, v):
-            if isinstance(v, dictattr):
-                return v + dict(key = k, pk = self.get('pk'))
-            else:
-                return v
-    d = PDict(a = 1, b = 2)
-    d = d(c = lambda b: Dict(b = b**2))
-    assert d.c == {'b': 4, 'key': 'c', 'pk': None}
     
     """
     _key = 'key'
 
-    def _postprocess(self, key, value):
-        return value
     
     def __getitem__(self, value):
         if callable(value):
@@ -82,10 +66,10 @@ class Dict(dictattr):
                 raise ValueError('circular function calling')
             else:
                 for key, value in independent.items():
-                    res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
+                    res[key] = res.apply(value, **{self._key : key})
                 callables = {key: value for key, value in callables.items() if not key in independent}
         for key, value in callables.items():
-            res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
+            res[key] = res.apply(value, **{self._key : key})
         return res
     
     def __add__(self, other):
