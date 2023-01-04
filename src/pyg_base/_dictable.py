@@ -952,6 +952,30 @@ class dictable(Dict):
         """
         
         Performs either an inner join or a cross join between two dictables
+        
+        :Parameters:
+        ------------
+        other: dictable-like
+            a table to join with. 
+        
+        lcols: str/list of str/callables
+            the values on which we join on LHS
+        
+        rcols: str/list of str/callables
+            the values on which we join on RHS. 
+            
+        If rcols are None, use the same as lcols. 
+        If both are None, will inner join on joint columns
+        If both are empty lists, will cross join
+        
+        mode: int/str/callable
+            If we have SAME COLUMN NAMES which are NOT in the join, we need to resolve them.
+            By default we return both LHS values and RHS values as a tuple
+            mode = 0/'left'/'lhs' : return the LHS value
+            mode = 1/'right'/'rhs': returns RHS value
+            mode = callable: apply that function
+        
+        
 
         :Example: inner join
         -------------------------------
@@ -966,6 +990,18 @@ class dictable(Dict):
         >>> x = dictable(a = ['a','b']) 
         >>> y = dictable(b = ['x','y'])
         >>> assert x.join(y) == dictable(a = ['a', 'a', 'b', 'b'], b = ['x', 'y', 'x', 'y'])
+
+    
+        Example: joining mode
+        --------------------
+        >>> from pyg import * 
+        >>> x = dictable(a = ['a', 'b', 'c', 'd'], b = [1,2,3,4])
+        >>> y = dictable(a = ['a', 'b', 'c', 'd'], b = [10,20,30,40])
+        
+        >>> assert x.join(y, 'a').b == [(1, 10), (2, 20), (3, 30), (4, 40)]
+        >>> assert x.join(y, 'a', mode = 'r').b == x.join(y, 'a', mode = 1).b == [10,20,30,40]
+        >>> assert x.join(y, 'a', mode = 'l').b == x.join(y, 'a', mode = 0).b == [1,2,3,4]
+        >>> assert x.join(y, 'a', mode = add_).b == [11,22,33,44]
 
         """
         _lcols = lcols
