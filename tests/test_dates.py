@@ -1,5 +1,6 @@
 from pyg_base import dt, dt_bump, drange, dt,dt_bump, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, eq, nth_weekday_of_month
 from pyg_base._dates import none2dt, is_period, ym, month, uk2dt, us2dt, period, is_bump
+
 import datetime
 import pytest
 import dateutil as du
@@ -213,7 +214,7 @@ def test_dt_bump_ts():
     assert eq(dt_bump(t, 1), pd.Series([1,2,3], drange(dt(2000,1,2),2)))
     
 
-def test_dt_bump():
+def test_dt_bump2():
     t = dt(2000,3,1)
     assert dt_bump(t, 1) == d(2000,3,2)
     assert dt_bump(t,datetime.timedelta(1)) == d(2000,3,2)
@@ -251,6 +252,20 @@ def test_dt_bump():
     assert dt(t, '2b') == dt(2000,4,3)
 
 
+def test_dt_on_list():
+    assert dt([2001,2002,2003]) == drange(2001,2003, '1y')
+    assert ymd([2001,2002,2003]) == drange(2001,2003, '1y')
+    assert dt(range(10)) == drange(10)[:-1]
+    assert ymd(range(10)) == drange(10)[:-1]
+
+def test_dt_on_ts():
+    t = pd.Series([1,2,3], ['01-01-2001', datetime.date(2002,1,1), 2003])
+    assert eq(dt(t) , pd.Series([1,2,3], dt([2001,2002,2003])))
+
+
+
+
+
 def test_drange():
     
     assert drange(2000,2001,'1m') == [datetime.datetime(2000, 1, 1, 0, 0),
@@ -267,13 +282,13 @@ def test_drange():
                                      datetime.datetime(2000, 12, 1, 0, 0),
                                      datetime.datetime(2001, 1, 1, 0, 0)]
 
-    assert drange([dt(2000),'-5b'], 2000 ,'1b') == [datetime.datetime(1999, 12, 27, 0, 0),
+    assert drange(dt(dt(2000),'-5b'), 2000 ,'1b') == [datetime.datetime(1999, 12, 27, 0, 0),
                                                      datetime.datetime(1999, 12, 28, 0, 0),
                                                      datetime.datetime(1999, 12, 29, 0, 0),
                                                      datetime.datetime(1999, 12, 30, 0, 0),
                                                      datetime.datetime(1999, 12, 31, 0, 0)]
 
-    assert drange([dt(2000),'-5b'], '5b','1b') == [datetime.datetime(1999, 12, 27, 0, 0),
+    assert drange(dt(dt(2000),'-5b'), '5b','1b') == [datetime.datetime(1999, 12, 27, 0, 0),
                                                      datetime.datetime(1999, 12, 28, 0, 0),
                                                      datetime.datetime(1999, 12, 29, 0, 0),
                                                      datetime.datetime(1999, 12, 30, 0, 0),

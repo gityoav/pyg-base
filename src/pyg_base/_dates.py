@@ -1,4 +1,4 @@
-from pyg_base._types import is_int, is_float, is_str, is_num, is_nan, is_ts, is_date
+from pyg_base._types import is_int, is_float, is_str, is_num, is_nan, is_ts, is_pd, is_date
 from pyg_base._as_list import as_list
 from pyg_base._cache import cache
 import datetime
@@ -532,13 +532,14 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
         What is dt()? The default is datetime.datetime.now()
     
     """
-    args = as_list(args)
     if tzinfo is None and len(args) and is_tz(args[-1]):
         tzinfo = args[-1]; args = args[:-1]    
     if len(args) == 0:
         res = none() if callable(none) else none
         return tz_convert(res, tzinfo)
     t = args[0]
+    args1 = as_list(args[1:])
+    args = [t] + args1    
     if isinstance(t, np.datetime64):
         t = np2dt(t)
         if tzinfo:
@@ -547,12 +548,15 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
         return NaT
     elif isinstance(t, datetime.date) and not isinstance(t, datetime.datetime):
         t = datetime.datetime(t.year, t.month, t.day, tzinfo = as_tz(tzinfo))
-    elif is_ts(t):
-        res = dt_bump(t, *args[1:])
+    elif is_pd(t):
+        res = t.copy()
+        res.index = [dt(d, *args1, dialect = dialect, none = none) for d in t.index]
         return res if tzinfo is None else tz_replace(res, tzinfo)
     if isinstance(t, datetime.datetime):
-        res = reduce(dt_bump, args[1:], t)
+        res = reduce(dt_bump, args1, t)
         return res if tzinfo is None else tz_replace(res, tzinfo)
+    elif isinstance(t, (list, range)):
+        return [dt(d, *args1, dialect = dialect, none = none, tzinfo = tzinfo) for d in t]
     if len(args) == 1:
         if t is None:
             return tz_convert(none(), tzinfo) if callable(none) else none
@@ -618,7 +622,14 @@ def ymd(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
 
     """
     t = dt(*args, dialect = dialect , none = none, tzinfo = tzinfo)
-    return datetime.datetime(t.year, t.month, t.day, tzinfo = t.tzinfo)
+    if isinstance(t, list):
+        return type(t)([datetime.datetime(d.year, d.month, d.day, tzinfo = d.tzinfo) for d in t])
+    elif is_ts(t):
+        res = t.copy()
+        res.index = [datetime.datetime(d.year, d.month, d.day, tzinfo = d.tzinfo) for d in t.index]
+        return res
+    else:
+        return datetime.datetime(t.year, t.month, t.day, tzinfo = t.tzinfo)
 
 
 ndt = partial(dt, none = None)
