@@ -5,20 +5,49 @@ import csv
 __all__ = ['path_name', 'path_dirname', 'path_join', 'mkdir', 'read_csv']
 
     
-def read_csv(path, errors = 'replace', **fmt):
+def read_csv(path, encoding = None, errors = 'replace', **fmt):
     """
     A light-weight csv reader, no conversion is done, nor do we insist equal number of columns per row.
     - by default, encoding error (unicode characters) are replaced.
     - fmt parameters are parameters for the csv.reader object, see https://docs.python.org/3/library/csv.html
-    """
+    
+    
+    Parameters:
+    -----------
+    path: str/list of str
+        file(s) to read or list of a directory
+    
+    errors: 
+        how to handle errors when opening a file. See io.open for full help
+
+    encoding:
+        file encoding. See io.open for full help
+    
+    **fmt: 
+        formatting options fed into csv.reader, for example dialect = 'excel'
+    
+    """        
+    if isinstance(path, list):
+        return [read_csv(p, encoding = encoding, errors = errors, **fmt) for p in path]
+    elif isinstance(path, dict):
+        return {k: read_csv(p, encoding = encoding, errors = errors, **fmt) for k,p in path.items()}
     path = path_name(path)
+    if not os.path.exists(path) and not path.endswith('.csv') and os.path.exists(path + '.csv'):
+        path = path + '.csv'
     with open(path, 'r', errors = errors) as f:
         reader = csv.reader(f, **fmt)
         data = list(reader)
     return data
 
 
-def dictdir(path, level = 0):
+def _listdir(path):
+    try: 
+        return os.listdir(path)
+    except PermissionError:
+        return []
+
+
+def dictdir(path, level = 0, skip_permission = True):
     """
     returns a tree like structure where the leaf of each node is the path. 
 
@@ -29,6 +58,9 @@ def dictdir(path, level = 0):
     
     level: int
         how many levels for the subdir to explore
+
+    skip_permission: bool
+        if True, will skip directories with permission errors, treating them as empty directories
         
     Returns:
     --------
@@ -91,9 +123,10 @@ def dictdir(path, level = 0):
     ZZPA Comdty|2023|Z|C:/Users/Dell/Dropbox/Yoav/TradingData/bc\ZZPA Com
 
     """
-    res = {x : os.path.join(path, x) for x in os.listdir(path)}
+    path = path_name(path)
+    res = {x : os.path.join(path, x) for x in (_listdir if skip_permission else os.listdir)(path)}
     if level>0:
-        res = {k : dictdir(v, level = level-1) if os.path.isdir(v) else v for k, v in res.items()}
+        res = {k : dictdir(v, level = level-1, skip_permission = skip_permission) if os.path.isdir(v) else v for k, v in res.items()}
     return res
 
 
