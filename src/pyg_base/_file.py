@@ -34,7 +34,7 @@ def read_csv(path, encoding = None, errors = 'replace', **fmt):
     path = path_name(path)
     if not os.path.exists(path) and not path.endswith('.csv') and os.path.exists(path + '.csv'):
         path = path + '.csv'
-    with open(path, 'r', errors = errors) as f:
+    with open(path, 'r', errors = errors, encoding = encoding) as f:
         reader = csv.reader(f, **fmt)
         data = list(reader)
     return data
