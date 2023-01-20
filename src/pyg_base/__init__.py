@@ -1,7 +1,7 @@
 from pyg_base._as_float import as_float
 from pyg_base._as_list import as_list, as_tuple, first, last, passthru, unique, is_rng
 from pyg_base._as_primitive import as_primitive
-from pyg_base._bitemporal import Bi, bi_merge, bi_read, is_bi
+from pyg_base._bitemporal import Bi, bi_merge, bi_read, is_bi, bi_asof
 from pyg_base._cache import cache, cache_func
 from pyg_base._cfg import mkdir, get_cache, cfg_read, cfg_write, CFG
 from pyg_base._dates import iso, dt, uk2dt, us2dt, dt_bump, as_tz, is_tz, tzones, tz_convert, tz_replace, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m

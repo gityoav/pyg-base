@@ -12,10 +12,10 @@ from functools import partial
 
 _series = '_is_series'
 _columns = '_column_names'
-_asof = '_asof'
+_updated = 'updated'
 
 def is_bi(df):
-    return is_df(df) and _asof in df.columns
+    return is_df(df) and _updated in df.columns
 
 _nth = lambda v, n: v.iloc[min(n, len(v)-1)] if n>=0 else v.iloc[max(n, -len(v))]
     
@@ -48,25 +48,26 @@ def bi_read(df, asof = None, what = -1):
     Example:
     --------
         df = pd.DataFrame(dict(a = [1,2,3,4,5,6], 
-            _asof = drange(-2) + drange(-1) + drange(0)), 
+            _updated = drange(-2) + drange(-1) + drange(0)), 
             index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
     
     """
     if not is_bi(df) or what == 'all':
         return df
     if is_date(asof):
-        df = df[df[_asof]<=asof]
+        df = df[df[_updated]<=asof]
     if is_bi(asof):
-        df = df[df[_asof] <= asof.reindex(df.index)[_asof]]
+        df = df[df[_updated] <= asof.reindex(df.index)[_updated]]
     index_name = df.index.name
     if len(df):        
         if index_name is None:
             df.index.name = 'index'
-        gb = df.sort_values(_asof).groupby(df.index.name)
+        gb = df.sort_values(_updated).groupby(df.index.name)
         res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
     else:
         res = df
-    res = res.drop(columns = _asof)
+    res = res.drop(columns = _updated)
+    res.index.name = index_name
     if _columns in res.columns: ## we have a data frame with potentially mixed columns
         combos = list(set(res[_columns].values))
         if len(combos) == 1:
@@ -74,7 +75,8 @@ def bi_read(df, asof = None, what = -1):
         else:
             columns = list(set(sum(combos, ())))
         res = res[columns]
-    res.index.name = index_name
+    else:
+        columns = res.columns
     if res.shape[1] == 1 and res.columns[0] == _series:
         res = res[_series]
     else:
@@ -85,17 +87,48 @@ def bi_read(df, asof = None, what = -1):
 def bi_asof(df, what = -1):
     """
     returns a timeseries stamped on the dates for which we have observations
+
+    Parameters:
+    ----------
+    df : pandas dataframe
+        bitemporal data
+        
+    what: str/int 
+        how to aggregate multiple observations on the same dates
+    
+
+    Example:
+    ----------
     >>> df = pd.DataFrame(dict(a = [1,2,3,4,5,6], 
-            _asof = drange(-2) + drange(-1) + drange(0)), 
-            index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
-    >>> what = -1    
+                               updated = drange(-2) + drange(-1) + drange(0)), 
+                               index = [dt(-2)] * 3 + [dt(-1)] * 2 + [dt(0)])
+    >>> df
+
+                a    updated
+    2023-01-18  1 2023-01-18
+    2023-01-18  2 2023-01-19
+    2023-01-18  3 2023-01-20
+    2023-01-19  4 2023-01-19
+    2023-01-19  5 2023-01-20
+    2023-01-20  6 2023-01-20
+    
+    >>> bi_asof(df, -1)
+    
+                a
+    updated      
+    2023-01-18  1
+    2023-01-19  4
+    2023-01-20  6
+    
+    >>> bi_read(df, what = -1)
+    
 
     """
     if not is_bi(df) or what == 'all':
         return df
-    gb = df.sort_index().groupby(_asof)
+    gb = df.sort_index().groupby(_updated)
     res = gb.apply(_as_what(what)) ## since first and last return NON NAN VALUES, we need to override them
-    res = res.drop(columns = _asof)
+    res = res.drop(columns = _updated)
     return res
 
 
@@ -103,27 +136,27 @@ def _drop_repeats(d):
     """ 
     This is applied to a dataframe where 
     - all the observed index values are the same.
-    - the _asof column is already sorted
+    - the _updated column is already sorted
     
     If there are partial bad values, we ffill, to ensure, the new observation are not nan
     Conversely, if the old value is nan, we accept the new value
     
     1) we first drop repeated values
-    2) if we have a NEW value but the SAME _asof, we keep the later value. 
+    2) if we have a NEW value but the SAME _updated, we keep the later value. 
     
     """
-    no_asof = d.drop(columns = _asof).ffill()
-    old_values = no_asof.iloc[:-1].values
-    new_values = no_asof.iloc[1:].values
+    no_updated = d.drop(columns = _updated).ffill()
+    old_values = no_updated.iloc[:-1].values
+    new_values = no_updated.iloc[1:].values
     repeats = new_values == old_values
     res = d[~np.concatenate([[False],repeats.min(axis=1)])]
-    res = res.drop_duplicates(subset = [_asof], keep = 'last')
+    res = res.drop_duplicates(subset = [_updated], keep = 'last')
     return res
  
 
 @loop(list)
 def _get_columns(df):
-    return tuple(sort([col for col in df.columns if col!=_asof]))
+    return tuple(sort([col for col in df.columns if col!=_updated]))
 
 
 @loop(list)
@@ -132,14 +165,14 @@ def _add_columns(df):
         return df
     else:
         df = df.copy()
-        columns = tuple([col for col in df.columns if col!=_asof])
+        columns = tuple([col for col in df.columns if col!=_updated])
         df[_columns] = [columns]*len(df)
     return df
     
 @loop(list)
 def _set_unique_column(df, col = _series):
     df = df.copy()
-    columns = [col if c!=_asof else c for c in df.columns]
+    columns = [col if c!=_updated else c for c in df.columns]
     df.columns = columns    
     return df
 
@@ -198,21 +231,21 @@ def bi_merge(old_data, new_data, asof = 'now', existing_data = None):
     >>> bp1 = Bi(p1, 1)
     >>> bp2 = Bi(p2, 2)
     >>> m = bi_merge(bs, bp1)
-    >>> assert sort(m.columns) == sort([_series, _asof])
+    >>> assert sort(m.columns) == sort([_series, _updated])
     >>> m = bi_merge(bs, [bp1, bp2])    
-    >>> assert sort(m.columns) == sort([_series, _asof])
+    >>> assert sort(m.columns) == sort([_series, _updated])
     >>> assert eq(bi_read(m), as_series(p2))
     
     Example: handling of multiple column names with a 2d dataframe
     ------------------------------------------
     >>> from pyg import * 
-    >>> from pyg_base._bitemporal import _asof, _series, _columns
+    >>> from pyg_base._bitemporal import _updated, _series, _columns
     >>> s = pd.Series([1,2,3], drange(-2))
     >>> df = pd.DataFrame(dict(a = [1,2,4], b = [4,5,6]), drange(-2))
     >>> bs = Bi(s, dt(1))
     >>> bdf = Bi(df, dt(2))
     >>> m = bi_merge(bs, bdf)
-    >>> assert sort(m.columns) == sort(['a','b',_asof, _series, _columns])
+    >>> assert sort(m.columns) == sort(['a','b',_updated, _series, _columns])
     >>> assert eq(bi_read(m, asof = dt(1)), s)
     >>> assert eq(bi_read(m, asof = dt(2)), df)
     >>> df2 = pd.DataFrame(dict(a = [1,2,4], b = [4,5,6]), drange(-1,1))
@@ -251,7 +284,7 @@ def bi_merge(old_data, new_data, asof = 'now', existing_data = None):
     index_name = df.index.name
     if index_name is None:
         df.index.name = 'index'
-    gb = df.sort_values(_asof).groupby(df.index.name)
+    gb = df.sort_values(_updated).groupby(df.index.name)
     res = pd.concat([_drop_repeats(d) for _, d in gb])
     res.index.name = index_name
     return res
@@ -261,29 +294,29 @@ def Bi(df, asof = None):
     """
     Creates a bitemporal dataframe
     
-    :Example: make the _asof same as date index
+    :Example: make the _updated same as date index
     ---------
     >>> df = pd.DataFrame(dict(a = range(11)), drange(-10))
-    >>> assert eq(Bi(df, 0)[_asof].values, df.index.values) 
+    >>> assert eq(Bi(df, 0)[_updated].values, df.index.values) 
 
-    :Example: make the _asof right now...
+    :Example: make the _updated right now...
     ---------
-    >>> assert len(set(Bi(df)[_asof].values)) == 1
+    >>> assert len(set(Bi(df)[_updated].values)) == 1
 
-    :Example: make the _asof the 3am of next business...
+    :Example: make the _updated the 3am of next business...
     --------- 
     >>> Bi(df, ['1b', '3h'])
-                 a               _asof
+                 a               _updated
     2022-10-15   0 2022-10-18 03:00:00
     2022-10-16   1 2022-10-18 03:00:00
     ....
     2022-10-24   9 2022-10-25 03:00:00
     2022-10-25  10 2022-10-26 03:00:00
 
-    :Example: make the _asof any exact date...
+    :Example: make the _updated any exact date...
     ---------
     >>> asof = dt(2)
-    >>> assert set(Bi(df, asof)[_asof]) ==  set([asof])
+    >>> assert set(Bi(df, asof)[_updated]) ==  set([asof])
     
     """
     if asof is None or is_bi(df):
@@ -294,16 +327,16 @@ def Bi(df, asof = None):
         df = df.copy()
     if asof == 'shift':
         now = dt()
-        df[_asof] = list(df.index[1:]) + [now]        
+        df[_updated] = list(df.index[1:]) + [now]        
     elif is_bump(asof):
         now = dt()
-        df[_asof] = dt_bump(df, asof).index
-        df.loc[(df[_asof] > now), _asof] = now
+        df[_updated] = dt_bump(df, asof).index
+        df.loc[(df[_updated] > now), _updated] = now
     elif isinstance(asof, list):
         now = dt()
-        df[_asof] = dt_bump(df, *asof).index
-        df.loc[(df[_asof] > now), _asof] = now
+        df[_updated] = dt_bump(df, *asof).index
+        df.loc[(df[_updated] > now), _updated] = now
     else:
-        df[_asof] = dt(asof)
+        df[_updated] = dt(asof)
     return df
 
