@@ -1,4 +1,5 @@
 import inspect
+from functools import partial
 
 __all__ = ['getargspec', 'getargs', 'getcallargs', 'call_with_callargs', 'argspec_defaults', 'argspec_required', 'argspec_update', 'kwargs2args', 'argspec_add']
 
@@ -298,5 +299,38 @@ def kwargs2args(function, args, kwargs):
     else:
         kwargs = dict(kwargs)
         return [kwargs.pop(a) for a in getargspec(function).args if a in kwargs], kwargs
+
+
+
+def partialize(func, *args, **kwargs):
+    """ 
+    Returns a partial function but allows general kwargs:
+    partialize checks the function to see its signature and only passes the keywords that the function can handle
+    
+    Example: Exclusion of variables the function cannot handle:
+    -------
+    >>> func = partial(lambda a, b, c: a+b+c, c = 1)
+    >>> res = partialize(func, b = 1, c = 2, d = 3)
+
+    >>> assert isinstance(res, partial) 
+    >>> assert res.keywords == dict(c = 2, b = 1) # c updated but d excluded
+
+
+    >>> func = lambda a, b, c, **kwargs: a+b+c+len(kwargs)
+    >>> res = partialize(func, b = 1, c = 2, d = 3)
+    >>> assert isinstance(res, partial) 
+    >>> assert res.keywords == dict(c = 2, b = 1, d = 3) # c updated and also d
+    >>> assert res(a = 0, e = 'another variable to kwargs making it 2 in total') == 0 + 1 + 2 + 2  ## a + b + c + len(['d', 'e'])
+
+    """
+    if isinstance(func, partial):
+        kwargs = func.keywords| kwargs
+        args = func.args + args
+        func = func.func        
+    spec = getargspec(func)
+    if spec.varkw is None:
+        args = (spec.args or []) + (spec.kwonlyargs or [])
+        kwargs = {k : v for k ,v in kwargs.items() if k in args}
+    return partial(func, *args, **kwargs)
 
 
