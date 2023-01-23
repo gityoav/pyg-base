@@ -25,6 +25,7 @@ _primitives =  (int, np.int64, np.int32, np.int16, np.int8, float, np.float16, n
 def is_primitive(value):
     value is None or isinstance(value, _primitives)
 
+
 def is_series(value):
     """ is value a pd.Series"""
     return isinstance(value, pd.Series)
@@ -90,12 +91,19 @@ def is_iterable(value):
     return isinstance(value, Iterable) and not is_str(value)
 
 
-def nan2none(value):
-    """convert np.nan/np.inf to None"""
-    return None if is_nan(value) else value
-
 def null2none(value):
-    return None if isinstance(value, _primitives) and pd.isnull(value) else value
+    """
+    uses pd.isnull or np.inf to return None
+    
+    Example:
+    --------
+    for value in [np.inf, pd.NaT, np.nan]:
+        assert null2none(value) is None
+        
+    """
+    return None if isinstance(value, _primitives) and pd.isnull(value) or (is_num(value) and np.isinf(value)) else value
+
+nan2none = null2none
 
 def is_list(value):
     """is value a list"""
@@ -112,10 +120,6 @@ def is_listable(value):
 def is_date(value):
     """is value a date type: either datetime.date, datetime.datetime or np.datetime64"""
     return isinstance(value, (datetime.date, datetime.datetime, np.datetime64))
-
-
-def is_primitive(value):
-    return value is None or is_bool(value) or is_num(value) or is_date(value) or is_str(value)
 
 
 def is_ts(value):

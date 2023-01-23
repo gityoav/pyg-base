@@ -9,6 +9,7 @@ import datetime
 from dateutil.rrule import rrule, MONTHLY, WEEKLY, DAILY, YEARLY, HOURLY, MINUTELY, SECONDLY, MO, TU, WE, TH, FR, SA, SU
 
 import numpy as np
+import pandas as pd
 import re
 
 weekdays = {0: MO, 1: TU, 2: WE, 3: TH, 4: FR, 5: SA, 6: SU}
@@ -662,12 +663,32 @@ class Calendar(Dict, _calendar):
             return drange(t0, t1, bump)
     
     def filter(self, ts, day_start = None, day_end = None):
+        return ts[self.mask(ts, day_start = day_start, day_end = day_end)]
+
+
+    def mask(self, dates, day_start = None, day_end = None):
+        """
+        Returns a boolean mask matching ts dates. The mask is true when the date is a business date
+        
+        Parameters:
+        -----------
+        dates: pd.DataFrame/pd.Series or just any list of dates
+        
+        day_start/day_end: time
+            trading day start/end. 
+            
+        If day_start/day_end are not provided, will use is_bday() to determine if a date is a business day.
+            
+        """
+        if isinstance(dates, (pd.Series, pd.DataFrame)):
+            dates = dates.index
         if day_start is None or day_end is None:
-            return ts[[self.is_bday(date) for date in ts.index]]
+            return [self.is_bday(date) for date in dates]
         else:
             day_start = _day_start(day_start)
             day_end = _day_end(day_end)
-            return ts[[self.is_trading(date, day_start = day_start, day_end = day_end) for date in ts.index]]
+            return [self.is_trading(date, day_start = day_start, day_end = day_end) for date in dates]
+
 
         
 def calendar(key = None, holidays = None, weekend = None, t0 = None, t1 = None):
