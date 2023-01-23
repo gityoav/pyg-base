@@ -325,12 +325,11 @@ def partialize(func, *args, **kwargs):
     """
     if isinstance(func, partial):
         kwargs = func.keywords| kwargs
-        args = func.args + args
+        args = args or func.args
         func = func.func        
     spec = getargspec(func)
     if spec.varkw is None:
-        args = (spec.args or []) + (spec.kwonlyargs or [])
-        kwargs = {k : v for k ,v in kwargs.items() if k in args}
+        kwargs = {k : v for k ,v in kwargs.items() if k in (spec.args or []) + (spec.kwonlyargs or [])}
     return partial(func, *args, **kwargs)
 
 
