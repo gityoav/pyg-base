@@ -551,6 +551,9 @@ def dt(*args, dialect = 'uk', none = datetime.datetime.now, tzinfo = None):
     elif is_pd(t):
         res = t.copy()
         res.index = [dt(d, *args1, dialect = dialect, none = none) for d in t.index]
+        if len(set(res.index)) < len(res): 
+            res.index.name = res.index.name or 'date'
+            res = res.groupby(res.index.name).apply('last')
         return res if tzinfo is None else tz_replace(res, tzinfo)
     if isinstance(t, datetime.datetime):
         res = reduce(dt_bump, args1, t)
