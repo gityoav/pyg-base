@@ -5,6 +5,7 @@ import datetime
 from functools import partial
 import re
 from enum import Enum
+import json
 
 from pyg_base._logger import logger
 
@@ -24,6 +25,14 @@ _primitives =  (int, np.int64, np.int32, np.int16, np.int8, float, np.float16, n
                 
 def is_primitive(value):
     value is None or isinstance(value, _primitives)
+
+
+def is_jsonable(value):
+    try:
+        json.dumps(value)
+        return True
+    except (TypeError, OverflowError):
+        return False
 
 
 def is_series(value):
