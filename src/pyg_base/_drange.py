@@ -242,7 +242,7 @@ class _calendar():
                 return sorted([t, dt(t0)])
         elif is_bump(t1):
             if t0 is None:
-                return [t, self.dt_bump(t, t1)]
+                return [TMIN, self.dt_bump(t, t1)]
             elif is_bump(t0):
                 return [self.dt_bump(t, t0), dt_bump(t, t1)]
             else:
