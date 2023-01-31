@@ -251,7 +251,7 @@ class _calendar():
         else:
             t1 = dt(t1)
             if t0 is None:
-                return [t, t1]
+                return [TMIN, t1]
             elif is_bump(t0):
                 return [self.dt_bump(t1, t0), t1]
             else:
