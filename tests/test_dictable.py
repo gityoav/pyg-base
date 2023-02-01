@@ -1,4 +1,4 @@
-from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, encode, decode, is_tuple
+from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, is_tuple
 import pandas as pd
 import numpy as np
 import pytest
@@ -251,9 +251,6 @@ def test_dictable_set_underscore():
     assert '_c' not in a.keys()    
     assert a._c == 5
     assert '_c' not in dir(a)
-    assert decode(encode(a)) == a 
-    with pytest.raises(AttributeError):
-        decode(encode(a))._c    
     del a._c
     with pytest.raises(AttributeError):
         a._c
@@ -344,6 +341,15 @@ def test_dictable_xyz_multix():
     self = dictable(a = 1, b = [2,2,], c = [3,4]) + dictable(a = 2, b = [2,4,], c = [5,6]) + dictable(a = 3, b = [0,2,], c = [1,8])
     res = self.xyz(['a', 'b'], 'c', lambda a,b,c: a+b+c, last)    
     assert res.unpivot(['a', 'b'], 'c', 'd').exc(d = None).do(int, 'c') == self(d = lambda a,b,c: a+b+c)
+
+
+def test_dictable_xyz_v2():
+    self = dictable(a = [1,1,1,1,2,2,2,2],  b = [1,2,1,2,1,2,1,2], c = ['x', 'x', 'y', 'y', 'x', 'x', 'y', 'y'], d = range(8))
+    res = self.xyz(['a', 'b'], 'c', 'd')
+    assert res.a == [1,1,2,2]
+    assert res.b == [1,2,1,2]
+    assert res.x == [[0], [1], [4], [5]]
+    assert res.y == [[2], [3], [6], [7]]
 
 
 def test_dictable_join():
