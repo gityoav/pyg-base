@@ -3,7 +3,7 @@ from pyg_base._as_list import as_list, as_tuple
 from pyg_base._as_float import as_float
 from pyg_base._dict import Dict
 from pyg_base._zip import zipper, lens
-from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan
+from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan, is_num
 from pyg_base._tree import is_tree, tree_to_table
 from pyg_base._inspect import getargs
 from pyg_base._decorators import kwargs_support, try_none, try_back
@@ -785,7 +785,7 @@ class dictable(Dict):
         return type(self)({key: [value[i] for i in rows] for key, value in self.items()})
 
     def __add__(self, other):
-        if other in (None, 0):
+        if other is None or (is_num(other) and other == 0):
             return self
         return self.concat(self, other)
 
