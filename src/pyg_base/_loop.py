@@ -256,6 +256,19 @@ def _T(arg):
     else:
         return arg.T if isinstance(arg, (np.ndarray, pd.DataFrame)) and len(arg.shape) == 2 else arg
 
+_dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
+
+def _int2float(a):
+    if isinstance(a, (list, tuple)):
+        return type(a)([_int2float(v) for v in a])
+    elif isinstance(a, dict):
+        return type(a)({k : _int2float(v) for k,v in a.items()})
+    if (is_series(a) or is_df(a) or is_array(a)) and a.dtype in _dtype_ints:
+        return a.astype(float)
+    else:
+        return a
+    
+
 def _values(a):
     if isinstance(a, (list, tuple)):
         return type(a)([_values(v) for v in a])
@@ -295,13 +308,14 @@ def _np2pd(res, arg):
 class pd2np(wrapper):
     """
     converts a numpy-based function to work on pandas by converting to a numpy arrage and then converting back to panadas dataframe
+    will also convert int numpy arrays into floaters
     """
     def wrapped(self, *args, **kwargs):
         arg = getcallarg(self.function, args, kwargs)
         if not is_pd(arg):
-            return self.function(*args, **kwargs)
-        args_ = [_values(a) for a in args]
-        kwargs_ = {k : _values(v) for k, v in kwargs.items()}
+            args_, kwargs_ = _int2float((args, kwargs))
+            return self.function(*args_, **kwargs_)
+        args_, kwargs_ = _int2float(_values((args, kwargs)))
         res = self.function(*args_, **kwargs_)
         return _np2pd(res, arg)
 
