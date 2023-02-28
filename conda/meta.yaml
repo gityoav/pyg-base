@@ -1,6 +1,6 @@
 package:
     name: pyg-base
-    version: 0.0.52
+    version: 0.0.53
 
 source:
     path: ../src
@@ -16,14 +16,14 @@ requirements:
         - scipy             >=1.4.1
         - pandas            >=0.23.0
         - jsonpickle        >=1.2
-        - pyg-npy           >=0.0.3
+        - pyg-npy           >=0.0.9
         
     run:
         - numpy             >=1.18.1
         - scipy             >=1.4.1
         - pandas            >=0.23.0
         - jsonpickle        >=1.2
-        - pyg-npy           >=0.0.3
+        - pyg-npy           >=0.0.9
 about:
     home: https://github.com/gityoav/pyg-base
     license: GNU

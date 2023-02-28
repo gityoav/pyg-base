@@ -535,6 +535,10 @@ class Calendar(Dict, _calendar):
             nearby business day
 
         """
+        if isinstance(date, (list, tuple)):
+            return type(date)([self.adjust(d, adj) for d in date])
+        if isinstance(date, dict):
+            return type(date)({k : self.adjust(d, adj) for k,d in date.items()})
         adj = (adj or self.adj or 'm').lower()
         t = ymd(date)
         t = datetime.datetime(t.year, t.month, t.day)
