@@ -65,7 +65,8 @@ class Dict(dictattr):
         """
         we allow default params but internal values will trump them
         """
-        return kwargs_support(function)(**(default_params|self))
+        default_params.update(self)
+        return kwargs_support(function)(**default_params)
     
     
     def copy(self):

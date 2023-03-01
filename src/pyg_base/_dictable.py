@@ -35,7 +35,12 @@ def relabel_lower(v):
         return v.strip().replace(' ', '_').replace('"','').replace("'",'').replace(',','').lower()
     else:
         return v    
-    
+
+
+def _dict_in_place_update(a, b):
+    a.update(b)
+    return a
+
 def dict_concat(*dicts):
     """
     A method of turning a list of dicts into one happy dict sharing its keys
@@ -594,8 +599,9 @@ class dictable(Dict):
 
     
     def apply(self, function, **default_params):
-        f = kwargs_support(function)
-        return [f(**(default_params|row)) for row in self]
+        f = kwargs_support(function)        
+        return [f(**_dict_in_place_update(default_params,row)) for row in self] ## we update in place since all rows share same keys
+
 
     def do(self, function, *keys):
         """
