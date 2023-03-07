@@ -287,7 +287,7 @@ def _values(a):
 def _np2pd(res, arg):
     if isinstance(res, tuple):
         return tuple([_np2pd(r, arg) for r in res])
-    elif isinstance(res, tuple):
+    elif isinstance(res, list):
         return [_np2pd(r, arg) for r in res]
     elif isinstance(res, dict):
         return type(res)({k: _np2pd(r, arg) for k,r in res.items()})
