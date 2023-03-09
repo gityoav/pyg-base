@@ -1,6 +1,7 @@
 import os
 import json
-CFG = os.environ.get('PYG_CFG')
+#CFG = os.environ.get('PYG_CFG')
+CFG = os.environ.get('PYG_CFG', 'c:/etc/pyg.json')
 
 def mkdir(path):
     """

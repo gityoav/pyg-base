@@ -285,25 +285,26 @@ def _values(a):
         return a
 
 def _np2pd(res, arg):
+    if not is_pd(arg):
+        return res
     if isinstance(res, tuple):
         return tuple([_np2pd(r, arg) for r in res])
     elif isinstance(res, list):
         return [_np2pd(r, arg) for r in res]
     elif isinstance(res, dict):
         return type(res)({k: _np2pd(r, arg) for k,r in res.items()})
-    n = len0(res)
-    if n == len0(arg):
-        if len(res.shape) == 2:
-            res = pd.DataFrame(res, arg.index)
-            if len(arg.shape) == 2 and res.shape[1] == arg.shape[1]:
-                res.columns = arg.columns
-            return res
-        else:
-            return pd.Series(res, arg.index)
-    elif is_df(arg) and n == arg.shape[1]:
-        return pd.Series(arg.columns, res)
-    else:
-        return res
+    if isinstance(res, np.ndarray):
+        if len(res) == len(arg):
+            if len(res.shape) == 2:
+                res = pd.DataFrame(res, arg.index)
+                if len(arg.shape) == 2 and res.shape[1] == arg.shape[1]:
+                    res.columns = arg.columns
+                return res
+            else:
+                return pd.Series(res, arg.index)
+        elif is_df(arg) and len(res) == arg.shape[1]: ## column based result
+            return pd.Series(data = res, index = arg.columns)
+    return res
 
 class pd2np(wrapper):
     """
