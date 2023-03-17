@@ -627,7 +627,7 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
 
 
 @loop(list, dict, tuple)
-def _df_column(ts, column, i = None, n = None):
+def _df_column(ts, column, i = None, n = None, default = np.nan):
     """
     This is mostly a helper function to help us loop through multiple columns.
     Function grabs a column from a dataframe/2d array
@@ -662,9 +662,9 @@ def _df_column(ts, column, i = None, n = None):
                 if i<ts.shape[1]:
                     return ts.iloc[:,i]
                 else:
-                    return np.nan
+                    return default
         else:
-            return np.nan
+            return default
     elif is_arr(ts) and len(ts.shape) == 2:
         if ts.shape[1] == 1:
             return ts.T[0]
@@ -674,14 +674,14 @@ def _df_column(ts, column, i = None, n = None):
             elif i<ts.shape[1]:
                 return ts.T[i]
             else:
-                return np.nan
+                return default
         else:
             return ts
     else:
         return ts
 
 
-def df_column(ts, column, i = None, n = None):
+def df_column(ts, column, i = None, n = None, default = np.nan):
     """
     This is mostly a helper function to help us loop through multiple columns.
     Function grabs a column from a dataframe/2d array
@@ -701,7 +701,7 @@ def df_column(ts, column, i = None, n = None):
     -------
     a series or a 1-d numpy array
     """
-    return _df_column(ts = ts, column = column, i = i, n = n)
+    return _df_column(ts = ts, column = column, i = i, n = n, default = default)
 
 def _convert(res, columns):
     """
@@ -969,7 +969,7 @@ class presync(wrapper):
         _idx = kwargs.pop('join', self.index)
         _method = kwargs.pop('method', self.method)
         _columns = kwargs.pop('columns', self.columns)
-        
+        default = self.default
         values = list(args) + list(kwargs.values())
         listed = _list(values)
         tss = [ts for ts in listed if is_ts(ts)]
@@ -988,13 +988,13 @@ class presync(wrapper):
             if len(set(cols))==1: # special case where all 2-d dataframes have same column headers
                 columns = cols[0]
                 n = len(columns)
-                res = {column: self.function(*df_column(args_,column = column, i = i, n = n), **df_column(kwargs_, column=column, i = i, n = n)) for i, column in enumerate(columns)}
+                res = {column: self.function(*df_column(args_,column = column, i = i, n = n, default = default), **df_column(kwargs_, column=column, i = i, n = n)) for i, column in enumerate(columns)}
             else:
                 columns = df_columns(listed, _columns)
                 if is_int(columns):
-                    res = {i: self.function(*df_column(args_, column = None, i = i), **df_column(kwargs_, column=None, i = i)) for i in range(columns)}
+                    res = {i: self.function(*df_column(args_, column = None, i = i, default = default), **df_column(kwargs_, column=None, i = i, default = default)) for i in range(columns)}
                 elif columns is None:
-                    res = self.function(*df_column(args_, column = None), **df_column(kwargs_, column = None))
+                    res = self.function(*df_column(args_, column = None, default = default), **df_column(kwargs_, column = None, default = default))
                     if isinstance(res, pd.Series):
                         cols1 = [tuple(ts.columns) for ts in tss if is_df(ts) and ts.shape[1]==1]
                         if len(set(cols1))>0:
@@ -1003,12 +1003,12 @@ class presync(wrapper):
                 else:
                     columns = list(columns) if isinstance(columns, pd.Index) else as_list(columns)
                     columns = sorted(columns)
-                    res = {column: self.function(*df_column(args_,column = column), **df_column(kwargs_, column=column)) for column in columns}                
+                    res = {column: self.function(*df_column(args_,column = column, default = default), **df_column(kwargs_, column=column, default = default)) for column in columns}                
             converted = _convert(res, columns)
             return converted 
 
 
-@presync
+@presync(default = 1.0)
 def _div_(a, b):
     """
     division of a by b supporting presynching (inner join) of timeseries
@@ -1020,21 +1020,21 @@ def _div_(a, b):
         denom[denom == 0] = np.nan
         return a/denom
 
-@presync
+@presync(default = 0.0)
 def _sub_(a, b):
     """
     subtraction of b from a supporting presynching (inner join) of timeseries
     """
     return a-b
 
-@presync
+@presync(default = 0.0)
 def _add_(a, b):
     """
     addition of a and b supporting presynching (inner join) of timeseries
     """
     return a + b
 
-@presync
+@presync(default = 1.0)
 def _mul_(a, b):
     """
     multiplication of b and a supporting presynching (inner join) of timeseries
@@ -1082,11 +1082,40 @@ def _le_(a, b):
 
 def add_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
-    a = pd.Series([1,2,3], drange(-2))
-    b = pd.Series([1,2,3], drange(-3,-1))
-    add_(a,b, 'oj', method = 0)
+    Adds two timeseries/numbers.
     
-    addition of a and b supporting presynching (inner join) of timeseries
+    Parameters
+    ----------
+    a: df/series/num/list of these
+        lhs
+    b: df/series/num/list of these
+        rhs
+    join: str
+        method for joining on date axis
+    method: str
+        method for e.g. forward-filling when outer joining on index
+    columns: str
+        method for joining on columns. By default, if columns = 'ij', will only include columns shared by all multi-dim dataframes
+        If columns = 'oj', then missing columns are assumed to be zero
+    
+    Example: outer-join with 0 as default filling method:
+    --------
+    >>> from pyg import * 
+    >>> a = pd.Series([1,2,3], drange(-2))
+    >>> b = pd.Series([1,2,3], drange(-3,-1))
+    >>> add_(a,b, 'oj', method = 0)
+
+    Example: outer-join with multiple columns:
+    --------
+    >>> a = pd.DataFrame(dict(a = 1, b = 2), drange(2))
+    >>> b = pd.DataFrame(dict(c = 3, b = 2), drange(2))
+    >>> assert add_(a,b).shape[1] == 1 ## only 'b'
+    >>> columns = 'oj'; method = None; join = 'ij'
+    >>> assert add_(a,b, columns = 'oj').shape[1] == 3
+    >>> assert set(add_(a,b, columns = 'oj').c.values) == set([3])
+    >>> assert set(add_(a,b, columns = 'oj').a.values) == set([1])
+    >>> assert set(add_(a,b, columns = 'oj').b.values) == set([2+2])
+    
     """
     dfs = as_list(a) + as_list(b)
     f = lambda a, b: _add_(a, b, join = join, method = method, columns = columns)
@@ -1096,8 +1125,45 @@ def add_(a, b = None, join = 'ij', method = None, columns = 'ij'):
 def mul_(a, b = None, join = 'ij', method = None, columns = 'ij'):
     """
     multiplication of a and b supporting presynching (inner join) of timeseries
-    mul_(a,b,join = 'oj', method = 'ffill')
-    cell(mul_, a = a, b = b, join = 'oj')()
+
+
+    Parameters
+    ----------
+    a: df/series/num/list of these
+        lhs
+    b: df/series/num/list of these
+        rhs
+    join: str
+        method for joining on date axis
+    method: str
+        method for e.g. forward-filling when outer joining on index
+    columns: str
+        method for joining on columns. By default, if columns = 'ij', will only include columns shared by all multi-dim dataframes
+        If columns = 'oj', then missing columns are assumed to be zero
+    
+    Example: filling missing values with zero
+    --------
+    >>> from pyg import * 
+    >>> a = pd.Series([1,2,3], drange(-2))
+    >>> b = pd.Series([1,2,3], drange(-3,-1))
+    >>> mul_(a,b, 'oj', method = 0) 
+
+    2023-03-14    0.0
+    2023-03-15    2.0
+    2023-03-16    6.0
+    2023-03-17    0.0
+    Freq: D, dtype: float64
+
+    Example: outer-join with multiple columns:
+    --------
+    >>> a = pd.DataFrame(dict(a = 1, b = 2), drange(2))
+    >>> b = pd.DataFrame(dict(c = 3, b = 2), drange(2))
+    >>> assert mul_(a,b).shape[1] == 1 ## only 'b'
+    >>> columns = 'oj'; method = None; join = 'ij'
+    >>> assert mul_(a,b, columns = 'oj').shape[1] == 3
+    >>> assert set(mul_(a,b, columns = 'oj').c.values) == set([3])
+    >>> assert set(mul_(a,b, columns = 'oj').a.values) == set([1])
+    >>> assert set(mul_(a,b, columns = 'oj').b.values) == set([2*2])    
     """
     dfs = as_list(a) + as_list(b)
     f = lambda a, b: _mul_(a, b, join = join, method = method, columns = columns)
@@ -1105,7 +1171,46 @@ def mul_(a, b = None, join = 'ij', method = None, columns = 'ij'):
 
 def div_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
-    division of a by b supporting presynching (inner join) of timeseries
+    division of a and b supporting presynching (inner join) of timeseries
+
+    Parameters
+    ----------
+    a: df/series/num/list of these
+        lhs
+    b: df/series/num/list of these
+        rhs
+    join: str
+        method for joining on date axis
+    method: str
+        method for e.g. forward-filling when outer joining on index
+    columns: str
+        method for joining on columns. By default, if columns = 'ij', will only include columns shared by all multi-dim dataframes
+        If columns = 'oj', then missing columns are assumed to be zero
+    
+    Example: filling missing values with zero
+    --------
+    >>> from pyg import * 
+    >>> a = pd.Series([1,2,3], drange(-2))
+    >>> b = pd.Series([1,2,3], drange(-3,-1))
+    >>> div_(a,b, 'oj', method = 0) 
+
+    2023-03-14    0.000000
+    2023-03-15    0.500000
+    2023-03-16    0.666667
+    2023-03-17         NaN <--- this one seems odd but does make sense, we don't divide by zero
+    Freq: D, dtype: float64
+
+    Example: outer-join with multiple columns:
+    --------
+    >>> a = pd.DataFrame(dict(a = 5, b = 2), drange(2))
+    >>> b = pd.DataFrame(dict(c = 3, b = 8), drange(2))
+    >>> assert div_(a,b).shape[1] == 1 ## only 'b'
+    >>> columns = 'oj'; method = None; join = 'ij'
+    >>> res = div_(a,b, columns = 'oj')
+    >>> assert res.shape[1] == 3    
+    >>> assert set(res.c.values) == set([1/3])
+    >>> assert set(res.a.values) == set([5/1])
+    >>> assert set(res.b.values) == set([2/8])    
     """
     if isinstance(a, list):
         a = mul_(a, join = join, method = method, columns = columns)
@@ -1116,6 +1221,45 @@ def div_(a, b, join = 'ij', method = None, columns = 'ij'):
 def sub_(a, b, join = 'ij', method = None, columns = 'ij'):
     """
     subtraction of b from a supporting presynching (inner join) of timeseries
+
+    Parameters
+    ----------
+    a: df/series/num/list of these
+        lhs
+    b: df/series/num/list of these
+        rhs
+    join: str
+        method for joining on date axis
+    method: str
+        method for e.g. forward-filling when outer joining on index
+    columns: str
+        method for joining on columns. By default, if columns = 'ij', will only include columns shared by all multi-dim dataframes
+        If columns = 'oj', then missing columns are assumed to be zero
+    
+    Example: filling missing values with zero
+    --------
+    >>> from pyg import * 
+    >>> a = pd.Series([1,2,3], drange(-2))
+    >>> b = pd.Series([1,2,3], drange(-3,-1))
+    >>> sub_(a,b, 'oj', method = 0) 
+
+    2023-03-14   -1.0
+    2023-03-15   -1.0
+    2023-03-16   -1.0
+    2023-03-17    3.0
+    Freq: D, dtype: float64
+
+    Example: outer-join with multiple columns:
+    --------
+    >>> a = pd.DataFrame(dict(a = 5, b = 2), drange(2))
+    >>> b = pd.DataFrame(dict(c = 3, b = 8), drange(2))
+    >>> assert sub_(a,b).shape[1] == 1 ## only 'b'
+    >>> columns = 'oj'; method = None; join = 'ij'
+    >>> res = sub_(a,b, columns = 'oj')
+    >>> assert res.shape[1] == 3    
+    >>> assert set(res.c.values) == set([0-3])
+    >>> assert set(res.a.values) == set([5-0])
+    >>> assert set(res.b.values) == set([2-8])    
     """
     if isinstance(a, list):
         a = add_(a, join = join, method = method, columns = columns)

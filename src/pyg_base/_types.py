@@ -6,6 +6,7 @@ from functools import partial
 import re
 from enum import Enum
 import json
+import jsonpickle as jp
 
 from pyg_base._logger import logger
 
