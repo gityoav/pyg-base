@@ -590,8 +590,8 @@ class dictable(Dict):
             check = none
         res = self
         for key, value in kwargs.items():
-            if key not in res.keys():
-                res[key] = res(**{key: value})
+            if key not in res.keys(): ## revert back to simple calc
+                res = res(**{key: value})
             else:
                 if callable(value):
                     res[key] = [row[key] if not check(row[key]) else row[value] for row in res]
