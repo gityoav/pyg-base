@@ -66,7 +66,14 @@ def test_dictable_if_none():
         
     rs = dictable(a = [1,2,np.nan])
     rs = rs.if_none(np.nan, a = 3)
-    
+    assert rs.a == [1,2,3]
+
+    rs = dictable(a = [1,2,np.nan])
+    rs = rs.if_none(np.nan, a = 3)
+    assert rs.a == [1,2,3]
+
+
+
 
 def test_dictable_init_with_columns():
     assert dict(dictable(columns = 'a')) == dict(a = [])
