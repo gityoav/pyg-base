@@ -16,6 +16,7 @@ from pyg_npy import pd_read_npy
 from functools import reduce
 
 import pandas as pd
+import numpy as np
 import re
 
 Pattern = type(re.compile('')) ## this types definition moves across re. versions
@@ -582,6 +583,8 @@ class dictable(Dict):
         """
         if none is None:
             check = lambda value: value is None
+        elif np.isnan(none):
+            check = lambda value: pd.isnull(value)
         elif not callable(none):
             check = lambda value: value in as_list(none)
         else:
