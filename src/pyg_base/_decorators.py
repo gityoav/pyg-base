@@ -289,7 +289,7 @@ def _str(value):
         DESCRIPTION.
 
     """
-    if isinstance(value, (int, str, float, bool, datetime.datetime, datetime.date)):
+    if isinstance(value, (int, str, float, bool, datetime.datetime, datetime.date, type)):
         return str(value) 
     elif hasattr(value, '__len__'):
         return '%s[%i]'%(type(value), len(value))
