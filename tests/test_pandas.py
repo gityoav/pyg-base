@@ -243,4 +243,13 @@ def test_align_columns():
 def test_reindex_unindexable():
     for t in [1, 'not a pd', dt(4)]:
         assert df_reindex(t,  [dt(9), 'whatever']) == t
-    
+
+
+def test_reindex_with_ffill_for_dataframe():
+    dates =  drange(dt(2000), 4)
+    df = pd.DataFrame(dict(a = [np.nan,2,np.nan,4,5],b = [1,2,3,np.nan, np.nan]), dates)
+    index = drange(dt(2000,1,0), dt(2000,1,6))    
+    res = df_reindex(df, index, method = 'ffill')
+    assert eq(res, pd.DataFrame(dict(a = [np.nan,np.nan,2,2,4,5,5],b = [np.nan,1,2,3,3,3,3]), index))
+    res = df_reindex(df[['a']], index, method = ['ffill', 'bfill'])
+    assert eq(res, pd.DataFrame(dict(a = [2,2,2,2,4,5,5]), index))

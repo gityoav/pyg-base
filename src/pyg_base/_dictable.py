@@ -594,7 +594,7 @@ class dictable(Dict):
                 res = res(**{key: value})
             else:
                 if callable(value):
-                    res[key] = [row[key] if not check(row[key]) else row[value] for row in res]
+                    res[key] = [row[key] if not check(row[key]) else row.apply(value, **{'key': key}) for row in res]
                 else:
                     res[key] = [row[key] if not check(row[key]) else value for row in res]                    
         return res

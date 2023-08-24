@@ -462,3 +462,10 @@ def test_tictable_unpivot():
     full = rs.unpivot('name', 'subject', 'score')
     science = rs.unpivot('name', dict(science = ['maths', 'biology']), 'score')
     assert science.relabel(science = 'subject') == full.exc(subject = 'french')
+
+
+def test_dictable_if_none_passes_key():
+    f = lambda n, key: key * n
+    rs = dictable(n = [1,2,3], b = [1,None,None])
+    rs = rs.if_none(b = f)
+    assert rs.b == [1,'bb','bbb']    

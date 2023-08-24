@@ -159,7 +159,7 @@ def df_columns(seq, index = 'inner'):
         return _np_index(arrs, index)
     return None
 
-@loop(list, tuple, dict)
+@loop(list, tuple, dict, pd.DataFrame)
 def _df_fillna(df, method = None, axis = 0, limit = None):
     methods = as_list(method)
     if len(methods) == 0:
@@ -322,7 +322,7 @@ def nona(a, value = np.nan, edge = None):
     return _nona(a, value = value, edge = edge)
 
 
-@loop(list, tuple, dict)
+@loop(list, tuple, dict, pd.DataFrame)
 def _df_reindex(ts, index, method = None, limit = None):
     methods = as_list(method)
     if is_pd(ts):
