@@ -43,6 +43,15 @@ def _interpolate(y,x,xnew,
     >>> assert eq(_interpolate(y, x, [2.5,2.5]), np.array([1.5, 5.5]))
     >>> assert eq(_interpolate(y, np.array([x,x]), [2.5,2.5]), np.array([1.5, 5.5]))
 
+    Example: behaviour at bounds
+    -------
+    >>> x = np.array([1,2,3,4])
+    >>> y = np.array([1,np.nan, np.nan, 4.])
+    >>> xnew = np.array([0, 5])
+    >>> _interpolate(y,x,xnew, fill_value = 'extrapolate')
+        array([0., 5.])
+    >>> _interpolate(y,x,xnew, fill_value = 'bound')
+        array([1., 4.])        
     """
 
     if len(y.shape) == 2:
@@ -74,10 +83,22 @@ def _interpolate(y,x,xnew,
     y = y[mask]
     if len(y) < min_n:
         return np.nan + xnew
+
+    if fill_value == 'bound':
+        upper_bound = np.max(x)
+        lower_bound = np.min(x)
+        if is_num(xnew):
+            xnew = max(min(x,upper_bound), lower_bound)
+        else:
+            xnew = xnew.copy()
+            xnew[xnew>upper_bound] = upper_bound 
+            xnew[xnew<lower_bound] = lower_bound
+        fill_value = np.nan            
+
     return interp1d(x, y, kind = kind, axis = axis, copy = copy, 
                     bounds_error = bounds_error, 
                     fill_value = fill_value,
-                    assume_sorted = True)(xnew)
+                    assume_sorted = assume_sorted)(xnew)
 
 def interpolate(a, y, x = None, 
                    kind = 'linear', 
