@@ -88,7 +88,7 @@ def _interpolate(y,x,xnew,
         upper_bound = np.max(x)
         lower_bound = np.min(x)
         if is_num(xnew):
-            xnew = max(min(x,upper_bound), lower_bound)
+            xnew = max(min(xnew,upper_bound), lower_bound)
         else:
             xnew = xnew.copy()
             xnew[xnew>upper_bound] = upper_bound 
