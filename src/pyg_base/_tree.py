@@ -60,15 +60,8 @@ def tree_to_table(tree, pattern, leaf = False):
     if len(match) == 0:
         return [{}]
     key = match[0]
-    if leaf and len(match) == 1:
-        if key.startswith('%'):
-            return [{key[1:] : tree}]
-        elif isinstance(tree, dict) and key[1:] in tree:
-            return [{}]
-        elif isinstance(tree, str) and key[1:] == tree:
-            return [{}]
-        else:
-            return []
+    if leaf and len(match) == 1 and key.startswith('%'):
+        return [{key[1:] : tree}]
     elif isinstance(tree, dict):
         t = dict(tree)
         if key.startswith('%'):
