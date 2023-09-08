@@ -10,7 +10,7 @@ def _update(dicts, rhs):
 
 
 
-def tree_to_table(tree, pattern):
+def tree_to_table(tree, pattern, leaf = False):
     """
     The best way to understand is to give an example:
         
@@ -36,6 +36,12 @@ def tree_to_table(tree, pattern):
     >>> assert res == [{'grade': 3, 'subject': 'math'},
                          {'grade': 3, 'subject': 'english'},
                          {'grade': 4, 'subject': 'physics'}]
+
+    from pyg import * 
+    >>> res = tree_to_table(school, 'teachers/%subject/%performance', leaf = True)
+    >>> assert res == [{'grade': 3, 'subject': 'math'},
+                         {'grade': 3, 'subject': 'english'},
+                         {'grade': 4, 'subject': 'physics'}]
         
     :Parameters:
     ----------------
@@ -54,13 +60,22 @@ def tree_to_table(tree, pattern):
     if len(match) == 0:
         return [{}]
     key = match[0]
-    if isinstance(tree, dict):
+    if leaf and len(match) == 1:
+        if key.startswith('%'):
+            return [{key[1:] : tree}]
+        elif isinstance(tree, dict) and key[1:] in tree:
+            return [{}]
+        elif isinstance(tree, str) and key[1:] == tree:
+            return [{}]
+        else:
+            return []
+    elif isinstance(tree, dict):
         t = dict(tree)
         if key.startswith('%'):
-            return sum([_update(tree_to_table(t[k], match[1:]), {key[1:]: k}) for k in t], [])
+            return sum([_update(tree_to_table(t[k], match[1:], leaf=leaf), {key[1:]: k}) for k in t], [])
         else:
             if key in t:
-                return tree_to_table(t[key], match[1:])
+                return tree_to_table(t[key], match[1:], leaf = leaf)
             else:
                 return []
     else:
