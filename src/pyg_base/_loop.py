@@ -257,16 +257,24 @@ def _T(arg):
         return arg.T if isinstance(arg, (np.ndarray, pd.DataFrame)) and len(arg.shape) == 2 else arg
 
 _dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
+_dtype_floats = (np.dtype(np.float32), np.dtype(np.float64), np.dtype(np.float16))
 
 def _int2float(a):
     if isinstance(a, (list, tuple)):
         return type(a)([_int2float(v) for v in a])
     elif isinstance(a, dict):
         return type(a)({k : _int2float(v) for k,v in a.items()})
-    if (is_series(a) or is_df(a) or is_array(a)) and a.dtype in _dtype_ints:
+    if (is_series(a) or is_array(a)) and a.dtype in _dtype_ints:
         return a.astype(float)
-    else:
-        return a
+    if is_df(a):
+        if hasattr('dtype'):
+            if a.dtype in _dtype_ints:
+                return a.astype(float)
+        else:
+            ints = {k: float for k,v in dict(a.dtypes).items() if v in _dtype_ints}
+            if len(ints):
+                return a.astype(ints)
+    return a
     
 
 def _values(a):
