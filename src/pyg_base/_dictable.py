@@ -14,6 +14,7 @@ from pyg_base._cache import cache
 from pyg_base._logger import logger
 from pyg_npy import pd_read_npy
 from functools import reduce
+from pathlib import Path
 
 import pandas as pd
 import re
@@ -130,6 +131,15 @@ def _data_columns_as_dict(data, columns = None):
         else:
             return dict(zipper(columns, zipper(*data)))
     else:
+        if isinstance(data, Path): 
+            if data.exists():
+                path = str(data).lower()
+                if len([e for e in ['.csv', '.xlsx', '.parquet', 'pickle', '.npy', '.dictable'] if path.endswith(e)]) == 0:
+                    data = dict(data = data)
+                else: 
+                    data = path
+            else:
+                data = dict(data = data)
         if is_str(data):
             if data.endswith('.csv'):
                 data = read_csv(data)
