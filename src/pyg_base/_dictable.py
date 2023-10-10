@@ -97,6 +97,12 @@ def _text_box(value, max_rows = 5, max_chars = 50):
     return res
 
 
+def _is_path(path):
+    path = path.lower()
+    return len([x for x in ['.xlsx', '.xls', '.pickle', '.dictable', '.parquet', '.csv', '.npy', '.npa'] if path.endswith(x)]) > 0
+        
+
+
 def _data_columns_as_dict(data, columns = None):
     """
     >>> assert _data_columns_as_dict(data = [], columns = []) == dict()
@@ -122,6 +128,29 @@ def _data_columns_as_dict(data, columns = None):
         return {}
     elif isinstance(data, dict):
         return dict_concat(tree_to_table(data, columns)) if is_tree(columns) else dict(data)
+    if is_str(data) and _is_path(data):
+        data = Path(data)
+    if isinstance(data, Path): ## convert Path by loading the data
+        path = str(data).lower()
+        if path.endswith('.csv'):
+            data = read_csv(path)
+        elif '.xls' in path:
+            if is_str(columns):
+                data = dict(dictable.read_excel(path, columns))
+                columns = None
+            else:
+                data = dict(dictable.read_excel(path))
+        elif path.endswith('.parquet'):
+                data = pd.read_parquet(path)
+        elif path.endswith('.pickle'):
+            data = pd.read_pickle(path)
+        elif path.endswith('.dictable'):
+            try:
+                data = pd.read_pickle(path)
+            except Exception:
+                data = pd.read_parquet(path)
+        elif path.endswith('.npy'):
+            data = pd_read_npy(path)
     if columns is not None:
         if is_str(columns):
             if (is_str(data) and '.xls' in data) or isinstance(data, pd.io.excel.ExcelFile):
@@ -131,33 +160,8 @@ def _data_columns_as_dict(data, columns = None):
         else:
             return dict(zipper(columns, zipper(*data)))
     else:
-        if isinstance(data, Path): 
-            if data.exists():
-                path = str(data).lower()
-                if len([e for e in ['.csv', '.xlsx', '.parquet', 'pickle', '.npy', '.dictable'] if path.endswith(e)]) == 0:
-                    data = dict(data = data)
-                else: 
-                    data = path
-            else:
-                data = dict(data = data)
         if is_str(data):
-            if data.endswith('.csv'):
-                data = read_csv(data)
-            elif '.xls' in data:
-                data = dict(dictable.read_excel(data))
-            elif data.endswith('.parquet'):
-                data = pd.read_parquet(data)
-            elif data.endswith('.pickle'):
-                data = pd.read_pickle(data)
-            elif data.endswith('.dictable'):
-                try:
-                    data = pd.read_pickle(data)
-                except Exception:
-                    data = pd.read_parquet(data)
-            elif data.endswith('.npy'):
-                data = pd_read_npy(data)
-            else:
-                return dict(data = data)
+            return dict(data = data)
         if is_df(data):
             if data.index.name is not None:
                 data = data.reset_index()
@@ -859,6 +863,8 @@ class dictable(Dict):
                 io, sheet_name = io.split('!')
             if not '.xls' in io:
                 io = io + '.xlsx'
+            io = pd.ExcelFile(io)
+        elif isinstance(io, Path):
             io = pd.ExcelFile(io)
         if sheet_name is None:
             sheet_name = 0

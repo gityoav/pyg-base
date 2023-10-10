@@ -5,6 +5,7 @@ import pytest
 import tempfile
 import os
 import re
+from pathlib import Path
 
 @pytest.mark.skip(reason = 'file not there')
 def test_dictable_init_Excel():
@@ -469,3 +470,21 @@ def test_dictable_if_none_passes_key():
     rs = dictable(n = [1,2,3], b = [1,None,None])
     rs = rs.if_none(b = f)
     assert rs.b == [1,'bb','bbb']    
+
+
+def test_dictable_with_a_Path():
+    rs = dictable(a = 1, b = [1,2])
+    location = 'c:/temp/test_dictable_with_a_Path.csv'
+    path = Path(location)
+    pd.DataFrame(rs).to_csv(location)
+    assert dictable(path) == dictable(location) 
+    assert len(dictable(path, ['x', 'y', 'z'])) == 3
+    location = 'c:/temp/test_dictable_with_a_Path.xlsx'
+    pd.DataFrame(rs).to_excel(location)
+    a = dictable(location, 'Sheet1') 
+    b = dictable(location) 
+    path = Path(location)
+    a_ = dictable(path, 'Sheet1') 
+    b_ = dictable(path) 
+    assert a == b and a == a_ and a == b_
+
