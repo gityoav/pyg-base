@@ -162,6 +162,7 @@ def df_columns(seq, index = 'inner'):
 @loop(list, tuple, dict)
 def _df_fillna(df, method = None, axis = 0, limit = None):
     methods = as_list(method)
+    params = dict(limit = limit) if is_series(df) else dict(axis = axis, limit = limit)
     if len(methods) == 0:
         return df
     if is_arr(df):
@@ -169,20 +170,24 @@ def _df_fillna(df, method = None, axis = 0, limit = None):
     res = df
     for m in methods:
         if is_num(m):
-            res = res.fillna(value = m, axis = axis, limit = limit)
-        elif m in ['backfill', 'bfill', 'pad', 'ffill']:
-            res = res.fillna(method = m, axis = axis, limit = limit)
-        elif m in ['ffill_na', 'ffill_0']: # forward fill but only up to the end of a timeseries    
+            res = res.fillna(value = m, **params)
+        elif m == 'ffill':
+            res = res.ffill(**params)
+        elif m in ('bfill', 'backfill'):
+            res = res.bfill(**params)
+        elif m == 'pad':
+            res = res.fillna(method=m, **params)
+        elif m in ['ffill_na', 'ffill_0']: # forward fill but only up to the end of a timeseries
             invalid = np.nan if m == 'ffill_na' else 0.
             if len(df.shape) == 1:
                 last_valid = df.last_valid_index()
                 if last_valid is not None:    
-                    res = res.fillna(method = 'ffill', axis = axis, limit = limit)
+                    res = res.ffill(**params)
                     res[res.index>last_valid] = invalid
             else:
-                res = pd.concat([_df_fillna(res.iloc[:, i], method, axis, limit) for i in range(res.shape[1])], axis=1)
+                res = pd.concat([_df_fillna(res.iloc[:, i], method, **params) for i in range(res.shape[1])], axis=1)
         elif is_date(m):
-            res = res.fillna(method = 'ffill', axis = axis, limit = limit)
+            res = res.ffill(**params)
             res[res.index>m] = np.nan
         elif m in ('fnna', 'nona'):
             nonan = ~np.isnan(res)
@@ -198,10 +203,10 @@ def _df_fillna(df, method = None, axis = 0, limit = None):
                 res = res[nonan.values]
         else:
             if is_num(limit) and limit<0:
-                res = res.interpolate(method = m, axis = axis, limit = abs(limit), 
-                                      limit_direction = 'backward')
+                params = dict(limit=abs(limit)) if is_series(df) else dict(axis=axis, limit=abs(limit))
+                res = res.interpolate(method = m, limit_direction = 'backward', **params)
             else:
-                res = res.interpolate(method = m, axis = axis, limit = limit)
+                res = res.interpolate(method = m, **params)
     return res
 
 def df_fillna(df, method = None, axis = 0, limit = None):
