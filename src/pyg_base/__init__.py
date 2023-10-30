@@ -20,7 +20,7 @@ from pyg_base._loop import loop, loops, len0, pd2np, shape, loop_all, skip_if_da
 from pyg_base._named_dict import named_dict
 from pyg_base._pandas import df_index, df_columns, df_reindex, np_reindex, df_recolumn, df_concat, df_fillna, presync, df_sync, df_apply, \
     add_, sub_, mul_, div_, pow_, df_slice, df_unslice, nona, min_, max_, gt_, ge_, lt_, le_, df_count, df_sum, df_mean, df_std, as_series
-from pyg_base._pandas import ts_deal_with_issue, ts_gap, ts_degap, df_drop_index_duplicates, sf
+from pyg_base._pandas import ts_deal_with_issue, abs_, ts_gap, ts_degap, df_drop_index_duplicates, sf
 from pyg_base._perdictable import join, perdictable
 from pyg_base._reducer import reducer, reducing
 from pyg_base._roll import df_roll_off
