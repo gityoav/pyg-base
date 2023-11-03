@@ -1,11 +1,20 @@
 from pyg_base._loop import loop
 from pyg_base._types import is_str, is_num
 
-_k = {0 : '', 3 : 'k', 6:'m', 9:'b', 12: 't', -2 : '%'}
-_n = {v: 10**k for k,v in _k.items()}
-_n.update({v.upper(): 10**k for k,v in _k.items()})
+_endings = [('mln', 6), ('mn', 6), ('m', 6), ('bln', 9), ('bn', 9), ('b', 9), ('tln', 12), ('tn', 12), ('t', 12), ('%', -2), ('k', 3)]
+_n = [(k, 10**v) for k, v in _endings]
 
 __all__ = ['as_float']
+
+def _txt_and_mult(txt):
+    """
+    """
+    lower_txt = txt.lower()
+    for k, mult in _n:
+        if lower_txt.endswith(k):
+            return txt[:-len(k)], mult
+    return txt, 1
+
 
 @loop(list, tuple, dict)
 def _as_float(value):
@@ -26,6 +35,9 @@ def _as_float(value):
     >>> from pyg import *
     >>> assert as_float('1.3k') == 1300
     >>> assert as_float('1.4m') == 1400000
+    >>> assert as_float('1.4mln') == 1400000
+    >>> assert as_float('1.4bn') == 1400000000
+    >>> assert as_float('1.4tln') == 1400000000000
     >>> assert as_float('100%') == 1
     >>> assert as_float('1,234') == 1234
     >>> assert as_float('-1,234k') == -1234000
@@ -34,15 +46,11 @@ def _as_float(value):
         txt = value.replace(',','').replace(' ','')
         if not txt:
             return None
-        if txt[-1] in _n:
-            mult = _n[txt[-1]]
-            txt = txt[:-1]
-        else:
-            mult = 1
+        txt, mult = _txt_and_mult(txt)
         try:
-            res = mult * float(txt)
+            res = float(txt)
             res = round(res, len(txt)+2)
-            return res
+            return res * mult
         except ValueError:
             return value
     else:
