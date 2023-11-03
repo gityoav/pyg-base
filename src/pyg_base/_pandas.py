@@ -57,6 +57,9 @@ def _index(ts):
         raise ValueError('did not provide an index')
     
 
+def abs_(a):
+    return abs(a)
+
 def _df_index(indexes, index):
     if len(indexes) > 0:
         if is_str(index):
