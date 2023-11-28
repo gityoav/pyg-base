@@ -49,14 +49,22 @@ def pd_to_excel(filename, df,
             old = pd.read_excel(fname, sheet_name = sheet_name)
             df = pd.concat([old, df])
         if_sheet_exists = 'replace'
-    
-    with pd.ExcelWriter(fname, engine = 'openpyxl',
-                        mode = mode,
-                        date_format = date_format,
-                        datetime_format = datetime_format,
-                        if_sheet_exists = if_sheet_exists) as writer:
-        df.to_excel(writer, sheet_name = sheet_name, na_rep = na_rep,
-                    float_format = float_format, columns = columns, header = header)
-    
+
+    if file_exists:
+        with pd.ExcelWriter(fname, engine = 'openpyxl',
+                            mode = 'a',
+                            date_format = date_format,
+                            datetime_format = datetime_format,
+                            if_sheet_exists = if_sheet_exists) as writer:
+            df.to_excel(writer, sheet_name = sheet_name, na_rep = na_rep,
+                        float_format = float_format, columns = columns, header = header)
+    else:
+        with pd.ExcelWriter(fname, engine = 'openpyxl',
+                            mode = mode,
+                            date_format = date_format,
+                            datetime_format = datetime_format) as writer:
+            df.to_excel(writer, sheet_name = sheet_name, na_rep = na_rep,
+                        float_format = float_format, columns = columns, header = header)
+
     return df
         

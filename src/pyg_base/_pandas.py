@@ -27,6 +27,38 @@ from copy import copy
 import inspect
 import datetime
 
+def _is_non_decreasing(values):
+    """
+    >>> assert _is_non_decreasing([1,2,3])
+    >>> assert _is_non_decreasing([1,2,2]) ## non-decreasing is fine
+    >>> assert _is_non_decreasing([1,2,None])
+    >>> assert _is_non_decreasing([None, 1,2])
+    >>> with pytest.raises(TypeError):
+    >>>     _is_non_decreasing([1,None,2])
+    >>> with pytest.raises(TypeError):
+    >>>     _is_non_decreasing([1,3,2])
+
+
+    >>> assert not _is_non_decreasing([3,2,1])
+    >>> assert not _is_non_decreasing([2,2,1]) ## non-decreasing is fine
+    >>> assert not _is_non_decreasing([2,1,None])
+    >>> assert not _is_non_decreasing([None, 2,1])
+
+    """
+    if len(values) < 2:
+        return True
+    if values[-1] is None:
+        values = values[:-1]
+    if values[0] is None:
+        values = values[1:]
+    sorted_values = sorted(values)
+    if sorted_values == values:
+        return True
+    elif sorted_values == values[::-1]:
+        return False
+    else:
+        raise ValueError('needs to be either all increasing or all decreasing')
+
 
 __all__ = ['df_fillna', 'df_index', 'df_reindex', 'df_columns', 'presync', 'np_reindex', 'nona', 'df_slice', 'df_unslice', 'min_', 'max_', 'add_', 'mul_', 'sub_', 'div_', 'pow_']
 
@@ -1619,13 +1651,24 @@ def df_slice(df, lb = None, ub = None, openclose = '(]', n = 1):
         return pd.concat([pre, post]).sort_index()        
     if isinstance(df, list): 
         if isinstance(lb, list) and ub is None:
-            lb2df = dict(zip(lb,df))
-            lb = sorted(lb); df = [lb2df[key] for key in lb]
+            if not _is_non_decreasing(lb):
+                lb = lb[::-1]
+                df = df[::-1]
             ub = lb[1:] + [None]
         elif isinstance(ub, list) and lb is None:
-            ub2df = dict(zip(ub,df))
-            ub = sorted(ub); df = [ub2df[key] for key in ub]
+            if not _is_non_decreasing(ub):
+                ub = ub[::-1]
+                df = df[::-1]
             lb = [None] + ub[:-1]
+        elif isinstance(ub, list) and isinstance(lb, list):
+            ub_increasing = _is_non_decreasing(ub)
+            lb_increasing = _is_non_decreasing(lb)
+            if ub_increasing != lb_increasing:
+                raise ValueError('must have both lower bounds and upper bounds in same direction')
+            if not lb_increasing:
+                df = df[::-1]
+                lb = lb[::-1]
+                ub = ub[::-1]
         boundaries = sorted(set([date for date in lb + ub if date is not None]))
         df = [d if is_pd(d) else pd.Series(d, boundaries) for d in df]
         if n > 1:
@@ -1657,33 +1700,33 @@ def df_unslice(df, ub):
 
     >>> df.iloc[700:-700:]    
     
-    >>>                    0         1         2         3         4         5         6         7   8   9
-    >>> 1979-03-08  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
-    >>> 1979-03-09  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
-    >>> 1979-03-10  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
-    >>> 1979-03-11  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
-    >>> 1979-03-12  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
-    >>>              ...       ...       ...       ...       ...       ...       ...       ...  ..  ..
-    >>> 1998-01-27  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
-    >>> 1998-01-28  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
-    >>> 1998-01-29  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
-    >>> 1998-01-30  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
-    >>> 1998-01-31  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
+                        0         1         2         3         4         5         6         7   8   9
+    1979-03-08  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
+    1979-03-09  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
+    1979-03-10  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
+    1979-03-11  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
+    1979-03-12  198001.0  198004.0  198007.0  198010.0  198101.0  198104.0  198107.0  198110.0 NaN NaN
+                  ...       ...       ...       ...       ...       ...       ...       ...  ..  ..
+    1998-01-27  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
+    1998-01-28  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
+    1998-01-29  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
+    1998-01-30  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
+    1998-01-31  199804.0  199807.0  199810.0  199901.0  199904.0  199907.0  199910.0  200001.0 NaN NaN
 
     >>> res = df_unslice(df, ub)
     >>> res[ub[0]]
-    >>> 1977-04-07    198001.0
-    >>> 1977-04-08    198001.0
-    >>> 1977-04-09    198001.0
-    >>> 1977-04-10    198001.0
-    >>> 1977-04-11    198001.0
-    >>>                 ...
-    >>> 1979-12-28    198001.0
-    >>> 1979-12-29    198001.0
-    >>> 1979-12-30    198001.0
-    >>> 1979-12-31    198001.0
-    >>> 1980-01-01    198001.0
-    >>> Name: 0, Length: 1000, dtype: float64
+    1977-04-07    198001.0
+    1977-04-08    198001.0
+    1977-04-09    198001.0
+    1977-04-10    198001.0
+    1977-04-11    198001.0
+                    ...
+    1979-12-28    198001.0
+    1979-12-29    198001.0
+    1979-12-30    198001.0
+    1979-12-31    198001.0
+    1980-01-01    198001.0
+    Name: 0, Length: 1000, dtype: float64
     
     We can then even slice the data again:
         

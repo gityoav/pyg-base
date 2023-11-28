@@ -1,9 +1,10 @@
 from pyg_base._dictable import dictable
 from pyg_base._as_list import as_list
-from pyg_base._dates import dt
+from pyg_base._dates import dt, TMAX
 from pyg_base._pandas import df_slice, as_series
 from pyg_base._dictattr import dictattr
 import pandas as pd
+import numpy as np
 
 _data = 'data'
 
@@ -21,7 +22,7 @@ def _max(*values):
     else:
         return max(values)
 
-def df_roll_off(chain, loader,load_on = None,transform = None, live_check = None,
+def df_roll_off(chain, loader, load_on = None,transform = None, live_check = None,
             roll = 'roll', expiry = '-1m', n = 0, data = None, cutoff = '-2b', do_if_no_n = False):
     """
     
