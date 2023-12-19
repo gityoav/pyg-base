@@ -221,6 +221,11 @@ def test_dictable_exc():
     d = dictable(a = [1,2,3,4])
     assert d.inc(dict(a = 3)) == dictable(a = 3)
     assert d.exc(dict(a = 3)) == dictable(a = [1,2,4])
+    d = dictable(x = [1,2,3,np.nan], y = [0,4,3,5])
+    assert d.exc(x = np.nan) == dictable(x = [1,2,3], y = [0,4,3])         
+    assert d.exc(x = 1) == dictable(x = [2,3,np.nan], y = [4,3,5])
+    assert d.exc(x=1, y = [4,5]) == d ## not excluding anything since x = 1 only if y = 0
+    assert d.exc(x=[1,2], y = [4,5]) == d.exc(x=2) ## not excluding x = 1 since true only if y = 0
 
 
 def test_dictable_to_string():

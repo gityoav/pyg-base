@@ -196,6 +196,24 @@ def _value(value):
     else:
         return as_list(value)
 
+
+def _row_check(row, key, value):
+    v = row[key]
+    if value is None:
+        return v is None
+    if is_nan(value):
+        return is_nan(v)
+    if isinstance(value, Pattern):
+        return is_str(v) and value.search(v) is not None
+    return v in as_list(value)
+
+
+def and_(filters):
+    def func(row, filters = filters):
+        return min([_row_check(row, key, value) for key, value in filters.items()])
+    return func
+        
+
 class dictable(Dict):
     """
     :What is dictable?:
@@ -522,6 +540,9 @@ class dictable(Dict):
         >>> assert d.exc(x = np.nan) == dictable(x = [1,2,3], y = [0,4,3])         
         >>> assert d.exc(x = 1) == dictable(x = [2,3,np.nan], y = [4,3,5])
         >>> assert d.exc(x = [1,2]) == dictable(x = [1,2], y = [0,4]) 
+        >>> assert d.exc(x=1, y = [4,5]) == d ## not excluding anything since x = 1 only if y = 0
+        >>> assert d.exc(x=[1,2], y = [4,5]) == d.exc(x=2) ## not excluding x = 1 since true only if y = 0
+
 
         :Example: filtering on callables
         --------------
@@ -540,17 +561,9 @@ class dictable(Dict):
             else:
                 f = kwargs_support(function)
                 res = type(self)([row for row in res if not f(**row)])
-        for key, value in filters.items():
-            pass
-            if value is None:
-                res = res[[r is not None for r in res[key]]]
-            elif is_nan(value):
-                res = res[[not is_nan(r) for r in res[key]]]
-            elif isinstance(value, Pattern):
-                res = res[[(not is_str(r)) or value.search(r) is None for r in res[key]]]                
-            else:
-                value = as_list(value)
-                res = res[[r not in value for r in res[key]]]
+        if filters and len(res):
+            include = and_(filters)
+            res = res[[not include(row) for row in res]]            
         if len(res) == 0:
             return type(self)([], self.keys())
         return res                

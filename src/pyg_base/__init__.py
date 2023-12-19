@@ -9,7 +9,7 @@ from pyg_base._decorators import kwargs_support, kwpartial, wrapper, try_value, 
 from pyg_base._dict import Dict, items_to_tree, tree_items, tree_keys, tree_values, tree_setitem, tree_getitem, tree_get, tree_update, dict_invert
 from pyg_base._dictattr import dictattr, relabel, getattrs
 from pyg_base._dictable import dictable, dict_concat, is_dictable
-from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time
+from pyg_base._drange import date_range, drange, calendar, Calendar, clock, as_time, calendars
 from pyg_base._eq import eq, in_
 from pyg_base._file import read_csv, dictdir
 from pyg_base._getitem import getitem, callitem, callattr
