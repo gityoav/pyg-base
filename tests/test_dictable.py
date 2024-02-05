@@ -45,6 +45,12 @@ def test_dictable_init():
     assert dict(dictable(data = [1,2,3])) == dict(data = [1,2,3])
 
 
+def test_dictable_do_empty_list():
+    d = dictable(a = [1,2,3], b = 4)
+    assert d.do(lambda x: x **2 ) == dictable(a = [1,4,9], b = 16)
+    assert d.do(lambda x: x **2, []) == d
+
+
 def test_dictable_if_none():
     rs = dictable(a = [1,2,None])
     rs = rs.if_none(a = 3)    

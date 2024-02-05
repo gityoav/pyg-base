@@ -660,11 +660,17 @@ class dictable(Dict):
         >>> d = d.do(lambda value, denominator: value/denominator, 'a', 'b')
         >>> assert d == dictable(a = 0.1, b = [0.5,0.3,0.3,0.2], denominator = [10,20,30,40])
         
+        :Example: do nothing if empty do list
+        ---------
+        >>> d = dictable(a = [1,2,3], b = 4)
+        >>> assert d.do(lambda x: x **2 ) == dictable(a = [1,4,9], b = 16)
+        >>> assert d.do(lambda x: x **2, []) == d
+        
         """
         res = self.copy()
-        keys = as_list(keys)
         if len(keys)  == 0:
             keys = self.keys()
+        keys = as_list(keys)
         for key in keys:    
             for f in as_list(function):
                 args = as_list(try_none(getargs)(f))
