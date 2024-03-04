@@ -516,6 +516,39 @@ class dictable(Dict):
             return type(self)([], self.keys())
         return res                
 
+    def one_or_none(self, *functions, exc = None, find = None, **filters):
+        """
+        implements a sql-alchemy like one_or_none
+        
+        :examples: simple find of a unique row:
+        ----------
+        >>> rs = dictable(a = [1,2,3,4,5], b = [4,5,6,4,3], c = list('abcde'))
+        >>> rs.one_or_none(a = 3)
+        {'a': 3, 'b': 6, 'c': 'c'}
+
+        :examples: simple fail with two rows with b == 4
+        ----------
+        >>> with pytest.raises(ValueError):
+        >>>     rs.one_or_none(b = 4)    
+          
+        :examples: using exc to exclude a == 1 to give us unique entry, and also, get back 'c' column
+        ----------
+        >>> assert rs.one_or_none(b = 4, exc = dict(a = 1), find = 'c') == 'd'
+                    
+        """
+        res = self.inc(*functions, **filters)
+        if exc:
+            res = res.exc(**exc)
+        if len(res) > 1:
+            raise ValueError(f'Found multiple rows with with {functions} {filters} and exclude {exc}')
+        if len(res) == 0:
+            return None
+        res = res[0]
+        if find:
+            res = res[find]
+        return res
+
+    
     def exc(self, *functions, **filters):
         """
         performs a filter on what rows to exclude

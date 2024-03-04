@@ -499,3 +499,11 @@ def test_dictable_with_a_Path():
     b_ = dictable(path) 
     assert a == b and a == a_ and a == b_
 
+def test_dictable_one_or_none():
+    rs = dictable(a = [1,2,3,4,5], b = [4,5,6,4,3], c = list('abcde'))
+    assert rs.one_or_none(a = 3) == {'a': 3, 'b': 6, 'c': 'c'}
+    assert rs.one_or_none(a = 0) is None
+    with pytest.raises(ValueError):
+        rs.one_or_none(b = 4)      
+    assert rs.one_or_none(b = 4, exc = dict(a = 1), find = 'c') == 'd'
+    assert rs.one_or_none(b = 4, exc = dict(a = 1)) == {'a': 4, 'b': 4, 'c': 'd'}
