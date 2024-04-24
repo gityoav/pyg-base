@@ -43,6 +43,15 @@ def test_dictable_init():
     assert dict(dictable(1)) == dict(data = [1])
     assert dict(dictable('string')) == dict(data = ['string'])
     assert dict(dictable(data = [1,2,3])) == dict(data = [1,2,3])
+    
+    data = [[2, [2, 4, 6], [3, 4]]]; columns = ['a', 'b', 'c']
+    res = dictable(data, columns)
+    assert res.a == [2]
+    assert res.b == [[2,4,6]]
+    data = [[2, (2, 4, 6), (3, 4)]]; columns = ['a', 'b', 'c']
+    assert res.a == [2]
+    assert res.b == [[2,4,6]]
+
 
 
 def test_dictable_do_empty_list():

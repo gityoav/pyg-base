@@ -194,7 +194,7 @@ def _value(value):
     elif isinstance(value, (dict_values, dict_keys, range)):
         return list(value)
     else:
-        return as_list(value)
+        return list(value) if isinstance(value, tuple) else as_list(value)
 
 
 def _row_check(row, key, value):
