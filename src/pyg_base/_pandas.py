@@ -77,7 +77,7 @@ def _list(values):
         return [values]
 
 
-@loop(list, tuple, dict)
+@loop(list, tuple)
 def _index(ts):
     if isinstance(ts, pd.Index):
         return ts
@@ -85,8 +85,16 @@ def _index(ts):
         return ts.index
     elif is_arr(ts):
         return len(ts)
+    elif isinstance(ts, dict):
+        if 'index' in ts.keys():
+            return ts['index']
+        else:
+            return {key: _index(value) for key, value in ts.items()}
     else:
         raise ValueError('did not provide an index')
+
+def _is_dict_indexed(ts):
+    return isinstance(ts, dict) and 'index' in ts.keys()
     
 
 def abs_(a):
@@ -149,7 +157,7 @@ def df_index(seq, index = 'inner'):
     >>> assert len(res) == 14
     """
     listed = _list(seq)
-    indexes = [ts.index for ts in listed if is_pd(ts)]
+    indexes = [_index(ts) for ts in listed if is_pd(ts) or _is_dict_indexed(ts)]
     if len(indexes):
         return _df_index(indexes, index)
     arrs = [len(ts) for ts in listed if is_arr(ts)]
@@ -489,6 +497,8 @@ def df_reindex(ts, index = None, method = None, limit = None):
         index = df_index(ts, index)
     elif is_ts(index):
         index = index.index
+    elif _is_dict_indexed(index):
+        index = index['index']
     return _df_reindex(ts, index = index, method = method, limit = limit)
 
 
