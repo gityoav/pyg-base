@@ -1,4 +1,4 @@
-from pyg_base._loop import loop
+from pyg_base._dict import loop
 from pyg_base._types import is_str, is_float
 from pyg_base._as_list import as_list, is_rng
 

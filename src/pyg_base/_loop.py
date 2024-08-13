@@ -4,7 +4,7 @@ from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_arr, is_a
 from pyg_base._decorators import wrapper
 from pyg_base._as_list import as_tuple, as_list
 
-__all__ = ['loop', 'loops', 'len0', 'pd2np', 'shape', 'loop_all']
+__all__ = ['loops', 'len0', 'pd2np', 'shape']
 
 
 def _zero():
@@ -136,7 +136,7 @@ class loops(wrapper):
 
     :Examples:
     --------------
-    >>> @loop(dict, list, pd.DataFrame, pd.Series)
+    >>> @loops(dict, list, pd.DataFrame, pd.Series)
     >>> def f(a,b):
     >>>     return a+b
     
@@ -205,7 +205,7 @@ class loops(wrapper):
     
     def _wrapped(self, arg, args, kwargs):
         axis = kwargs.pop('axis', 0)
-        if isinstance(arg, dict) and dict in self.types:
+        if isinstance(arg, dict) and type(arg) in self.types:
             keys = sorted(arg.keys())
             res = {key : self._wrapped(arg[key], (_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
             return type(arg)(res)
@@ -232,18 +232,13 @@ class loops(wrapper):
                     n = arg.shape[1]
                     res = [self._wrapped(_item_by_i(arg,i,n), (_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
                     return axis0_to_array(res, arg)
-        elif isinstance(arg, self.types):
+        elif isinstance(arg, self.types) and not isinstance(arg, dict):
             n = len(arg)
             res = [self._wrapped(arg[i], (_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]                            
             return type(arg)(res)
         else:
             return self.function(arg, *args, **kwargs)
 
-def loop(*types):
-    """
-    returns an instance of loops(types = types)
-    """
-    return loops(types = as_tuple(types))
 
 
 def _T(arg):
@@ -328,10 +323,8 @@ class pd2np(wrapper):
         return _np2pd(res, arg)
 
 
-loop_all = loops(types = (pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict))
 
-
-@loop(dict, list, tuple)
+@loops(types = (dict, list, tuple))
 def _cut_pd(arg, index):
     if is_pd(arg):
         return arg.drop(index = index)
@@ -340,7 +333,7 @@ def _cut_pd(arg, index):
     else:
         return arg
 
-@loop(dict, list, tuple)
+@loops(types = (dict, list, tuple))
 def _cut_np(arg, n, t = None):
     if is_arr(arg) and (t is None or len(arg) == t):
         return arg[n:]

@@ -1,4 +1,4 @@
-from pyg_base._loop import loop
+from pyg_base._dict import loop
 from pyg_base._types import is_str, is_num
 
 _endings = [('million',6), ('billion', 9), ('trillion', 12), ('percent', -2), ('mln', 6), ('bln', 9), ('tln', 12), ('trl', 12), ('pct', -2), ('mn', 6), ('bn', 9), ('tn', 12), ('bp', -4), ('%', -2), ('m', 6), ('k', 3), ('b', 9), ('t', 12), ('crore', 7), ('lakh', 5)]

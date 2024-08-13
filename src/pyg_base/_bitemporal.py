@@ -3,7 +3,7 @@
 from pyg_base._types import is_df, is_date, is_series, is_int
 from pyg_base._dates import dt, dt_bump, is_bump
 from pyg_base._as_list import as_list
-from pyg_base._loop import loop
+from pyg_base._dict import loop
 from pyg_base._sort import sort
 
 import pandas as pd

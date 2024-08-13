@@ -1,6 +1,6 @@
 from pyg_base._types import is_int, is_float, is_str, is_date, is_bool
 from pyg_base._dates import dt
-from pyg_base._loop import loop
+from pyg_base._dict import loop
 from enum import Enum
 
 @loop(list, tuple)

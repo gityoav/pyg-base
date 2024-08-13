@@ -1,4 +1,4 @@
-from pyg_base import loop, eq, drange, Dict
+from pyg_base import loop, eq, drange, Dict, dictattr
 import pandas as pd; import numpy as np
 import pytest
 from numpy import array
@@ -11,6 +11,7 @@ def S(v):
         return [S(w) for w in v]
     else:
         return v.s
+
 
 def test_loop_dict():
     f = loop(dict)(AB)
@@ -28,6 +29,21 @@ def test_loop_dict():
         f(dict(a=1,b=2), dict(a=2, b=3, c=6))
     with pytest.raises(TypeError):
         f(dict(a=1,b=2), [2,2]) 
+
+def test_loop_just_dicts():
+    f = loop(dict)(AB)
+    res = f(dictattr(x = 1), b = 2)
+    assert res == dictattr(x = 3) and type(res) == dictattr
+    res = f(Dict(x = 1, y = 2), b = 2)
+    assert res == Dict(x = 3, y = 4) and type(res) == Dict
+    class FakeDict(dict):
+        pass
+    with pytest.raises(TypeError):
+        f(FakeDict(x = 1, y = 2), b = 2)
+    f = loop(dict, FakeDict)(AB)
+    res = f(FakeDict(x = 1, y = 2), b = 2)
+    assert res == FakeDict(x = 3, y = 4) and type(res) == FakeDict
+
 
 def test_loop_list():
     f = loop(list)(AB)

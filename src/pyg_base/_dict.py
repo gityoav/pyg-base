@@ -4,10 +4,13 @@ from pyg_base._as_list import as_list, as_tuple
 from pyg_base._types import is_str
 from pyg_base._inspect import getargs
 from pyg_base._eq import in_
+from pyg_base._loop import loops
 from copy import copy
 
+import numpy as np
+import pandas as pd
 
-__all__ = ['Dict', 'dict_invert', 'items_to_tree', 'tree_items', 'tree_keys', 'tree_values', 'tree_update', 'tree_setitem', 'tree_getitem', 'tree_get']
+__all__ = ['Dict', 'dict_invert', 'items_to_tree', 'tree_items', 'tree_keys', 'tree_values', 'tree_update', 'tree_setitem', 'tree_getitem', 'tree_get', 'loop', 'loop_all']
     
 class Dict(dictattr):
     """
@@ -130,6 +133,21 @@ class Dict(dictattr):
                 args = as_list(try_none(getargs)(f))
                 res[key] = f(res[key], **{k : v for k, v in res.items() if k in args[1:]})
         return res
+
+
+
+def loop(*types):
+    """
+    returns an instance of loops(types = types)
+    """
+    types = as_tuple(types)
+    for dict_like_type in (dictattr, Dict):
+        if dict in types and dict_like_type not in types:
+            types = types + (dict_like_type, )
+    return loops(types = types)
+
+loop_all = loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict)
+
 
 
 def dict_invert(d):

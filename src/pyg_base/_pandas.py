@@ -17,7 +17,7 @@ from pyg_base._as_list import as_list
 from pyg_base._zip import zipper
 from pyg_base._reducer import reducing, reducer
 from pyg_base._decorators import  wrapper
-from pyg_base._loop import loop
+from pyg_base._dict import loop
 from pyg_base._dates import dt
 from pyg_base._txt import lower
 import pandas as pd
