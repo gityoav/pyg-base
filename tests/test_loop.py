@@ -2,6 +2,7 @@ from pyg_base import loop, eq, drange, Dict, dictattr
 import pandas as pd; import numpy as np
 import pytest
 from numpy import array
+from collections import OrderedDict
 
 SP = lambda a, b: Dict(s = a+b, p = a*b)
 AB = lambda a, b: a+b
@@ -36,6 +37,9 @@ def test_loop_just_dicts():
     assert res == dictattr(x = 3) and type(res) == dictattr
     res = f(Dict(x = 1, y = 2), b = 2)
     assert res == Dict(x = 3, y = 4) and type(res) == Dict
+    res = f(OrderedDict([('x',1), ('y',2),]), b = 3)
+    assert res == OrderedDict([('x',4), ('y',5),]) and type(res) == OrderedDict
+
     class FakeDict(dict):
         pass
     with pytest.raises(TypeError):

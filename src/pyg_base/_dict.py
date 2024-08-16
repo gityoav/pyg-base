@@ -6,6 +6,7 @@ from pyg_base._inspect import getargs
 from pyg_base._eq import in_
 from pyg_base._loop import loops
 from copy import copy
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -135,15 +136,14 @@ class Dict(dictattr):
         return res
 
 
-
+types = (dict, )
 def loop(*types):
     """
     returns an instance of loops(types = types)
     """
     types = as_tuple(types)
-    for dict_like_type in (dictattr, Dict):
-        if dict in types and dict_like_type not in types:
-            types = types + (dict_like_type, )
+    if dict in types:
+        types = types + tuple(dict_like_type for dict_like_type in (OrderedDict, dictattr, Dict) if dict_like_type not in types)
     return loops(types = types)
 
 loop_all = loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict)
