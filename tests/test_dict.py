@@ -125,4 +125,10 @@ def test_items_to_trees_raise_if_duplicate():
         items_to_tree(items)    
     assert items_to_tree(items, raise_if_duplicate=False) == dict(a = 2)
     
+def test_Dict_if_none():
+    assert Dict(a = 1, b = 2).if_none(b = lambda a : a*3) == Dict(a = 1, b = 2)
+    assert Dict(a = 1, b = None).if_none(b = lambda a : a*3) == Dict(a = 1, b = 3)
+    assert Dict(a = 1).if_none(b = lambda a : a*3) == Dict(a = 1, b = 3)
+    assert Dict(a = 1).if_none(b = 3) == Dict(a = 1, b = 3)
+    assert Dict(a = 1, b = 2).if_none(b = 3) == Dict(a = 1, b = 2)
     
