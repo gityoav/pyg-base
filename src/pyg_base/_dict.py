@@ -134,7 +134,13 @@ class Dict(dictattr):
                 args = as_list(try_none(getargs)(f))
                 res[key] = f(res[key], **{k : v for k, v in res.items() if k in args[1:]})
         return res
-
+    
+    def if_none(self, **kwargs):
+        res = self.copy()
+        for key, value in kwargs.items():
+            if res.get(key) is None:
+                res = res(**{key : value})
+        return res
 
 types = (dict, )
 def loop(*types):
