@@ -312,14 +312,30 @@ class pd2np(wrapper):
     """
     converts a numpy-based function to work on pandas by converting to a numpy arrage and then converting back to panadas dataframe
     will also convert int numpy arrays into floaters
+    
+    Parameters:
+    exc: None/list of str/str
+    If you want a specific argument excluded from the conversion, specify it in construction exc = 'variable'; and then specify it when you call the function
+    
+    Example:
+    -------   
+    >>> assert pd2np(exc = 'a')(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == pd.Series
+    >>> assert pd2np(exc = None)(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
+    >>> assert pd2np(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
+    
     """
+    def __init__(self, function = None, exc = None):
+        super(pd2np, self).__init__(function = function, exc = as_list(exc))
+    
     def wrapped(self, *args, **kwargs):
         arg = getcallarg(self.function, args, kwargs)
+        excluded = {key:value for key, value in kwargs.items() if key in self.exc}
+        kwargs_ = {key:value for key, value in kwargs.items() if key not in self.exc}
         if not is_pd(arg):
-            args_, kwargs_ = _int2float((args, kwargs))
-            return self.function(*args_, **kwargs_)
-        args_, kwargs_ = _int2float(_values((args, kwargs)))
-        res = self.function(*args_, **kwargs_)
+            args_, kwargs_ = _int2float((args, kwargs_))
+            return self.function(*args_, **kwargs_, **excluded)
+        args_, kwargs_ = _int2float(_values((args, kwargs_)))
+        res = self.function(*args_, **kwargs_, **excluded)
         return _np2pd(res, arg)
 
 
