@@ -1,4 +1,4 @@
-from pyg_base import loop, eq, drange, Dict, dictattr
+from pyg_base import loop, eq, drange, Dict, dictattr, pd2np
 import pandas as pd; import numpy as np
 import pytest
 from numpy import array
@@ -248,4 +248,11 @@ def test_loop_df_ndarray_dict():
     assert eq(f(b,a).s, np.array([[2,4,6,8],[1,1,1,1]]).T)
     
  
+
+def test_pd2np_exc():
+    assert pd2np(exc = 'a')(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == pd.Series
+    assert pd2np(exc = None)(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
+    assert pd2np(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
+    
+
     
