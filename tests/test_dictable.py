@@ -369,6 +369,12 @@ def test_dictable_xyz():
     assert self.xyz(x,y,z, last) == dictable({'x': [1,2,3], '1': [1,2,3], '2': [2,4,6], '3': [3,6,9]})
     assert self.xyz(x,y,z, last).unpivot(x,y,'z').do(int, 'y') == self(z = z).sort(x,y)
 
+def test_dictable_xyz_one_line():
+    self = dictable(a = 1, b = 2, c = 'x', d = 3)
+    assert self.xyz(['a', 'b'], 'c', 'd') == dictable(a = 1, b = 2, x = [[3]])
+    assert self.xyz(['a', 'b'], 'c', 'd', len) == dictable(a = 1, b = 2, x = 1)
+
+
 def test_dictable_xyz_func_y():
     self = dictable(x = [1,2,3]) * dictable(y = [1,2,3]) 
     x = 'x'; y = lambda y: 'x%i'%y; z = lambda x, y: x * y

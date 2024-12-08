@@ -1267,7 +1267,7 @@ class dictable(Dict):
 
         :Example:
         -------
-        >>> self = dictable(x = [1,2,3]) * dictable(y = [1,2,3]) 
+        >>> self = dictable(a = 1, b = 2 , c = 'c', d = 3)
         >>> x = 'x'; y = 'y'; z = lambda x, y: x * y
         >>> self.exc(lambda x, y: x+y==5).xyz(x,y,z, len)
         
@@ -1295,7 +1295,7 @@ class dictable(Dict):
                         value = a(value)
                 res[i][k] = value
         dx = type(self)(xs, x)
-        dy = type(self)(res, y2id.keys())
+        dy = type(self)(res, list(y2id.keys()))
         dx.update(dy)
         return dx
     
