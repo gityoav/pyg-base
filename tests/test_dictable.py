@@ -522,3 +522,9 @@ def test_dictable_one_or_none():
         rs.one_or_none(b = 4)      
     assert rs.one_or_none(b = 4, exc = dict(a = 1), find = 'c') == 'd'
     assert rs.one_or_none(b = 4, exc = dict(a = 1)) == {'a': 4, 'b': 4, 'c': 'd'}
+
+
+def test_dictable_if_else():
+    rs = dictable(a = [1,2,3,4,5], b = [4,5,6,4,3], c = list('abcde'))
+    assert rs.if_else(lambda a, b: a<b, 'a', 'b') == [1,2,3,4,3]
+    assert rs.if_else(lambda a, b: a<b, lambda b,a: b-a, lambda a,b: a-b) == [3, 3, 3, 0, 2]

@@ -70,7 +70,7 @@ class Dict(dictattr):
         we allow default params but internal values will trump them
         """
         default_params.update(self)
-        return kwargs_support(function)(**default_params)
+        return kwargs_support(function)(**default_params) if callable(function) else self[function]
     
     
     def copy(self):
@@ -141,6 +141,24 @@ class Dict(dictattr):
             if res.get(key) is None:
                 res = res(**{key : value})
         return res
+    
+    def if_else(self, condition, if_true, if_false, **default_params):
+        """
+        
+        allows for evaluation of either if_true or if_false function
+
+        Example
+        -------
+        >>> table['col'] = table.if_else(lambda col: col is None, if_true, 'col')
+
+        is equivakent to
+
+        >>> table = table.if_none(col = if_true)
+        
+        """
+        tf = {True: if_true, False: if_false}
+        return self.apply(tf[bool(self[condition])], **default_params)
+
 
 types = (dict, )
 def loop(*types):

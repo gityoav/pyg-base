@@ -132,3 +132,13 @@ def test_Dict_if_none():
     assert Dict(a = 1).if_none(b = 3) == Dict(a = 1, b = 3)
     assert Dict(a = 1, b = 2).if_none(b = 3) == Dict(a = 1, b = 2)
     
+def test_Dict_apply():
+    assert Dict(a = 1, b = 2).apply('a') == 1
+    assert Dict(a = 1, b = 2).apply('b') == 2
+    assert Dict(a = 1, b = 2).apply(lambda a, b: a+b) == 3
+    
+    
+def test_dict_apply():
+    assert Dict(a = 1, b = 2).if_else(lambda a, b: a<b, 'a', 'b') == 1
+    assert Dict(a = 2, b = 1).if_else(lambda a, b: a<b, 'a', 'b') == 1
+    assert Dict(a = 1, b = 2).if_else(lambda a, b: a<b, lambda a,b: b-a, lambda a,b: a-b) == 1
