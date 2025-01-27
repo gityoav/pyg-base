@@ -441,20 +441,22 @@ class dictable(Dict):
         else:
             super(dictable, self).__delitem__(attr)
     
-    def if_else(self, condition, if_true, if_false):
+    def if_else(self, condition, if_true, if_false, **default_params):
         """
         
-        allows for partial evaluation. if_true and if_none are only evaluated pending on condition
+        allows for evaluation of either if_true or if_false function
+
+        Example
+        -------
+        >>> table['col'] = table.if_else(lambda col: col is None, if_true, 'col')
+
+        is equivakent to
+
+        >>> table = table.if_none(col = if_true)
         
-        table.iff(lambda k: k is None, )
         """
-        values = []
-        for row in self:
-            if row[condition]:
-                values.append(row[if_true])
-            else:
-                values.append(row[if_false])
-        return values
+        tf = {True: if_true, False: if_false}
+        return [row.apply(tf[bool(row[condition])], **default_params) for row in self]
         
     
     def inc(self, *functions, **filters):
