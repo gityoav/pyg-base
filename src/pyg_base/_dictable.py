@@ -2,6 +2,7 @@ from _collections_abc import dict_keys, dict_values
 from pyg_base._as_list import as_list, as_tuple
 from pyg_base._as_float import as_float
 from pyg_base._dict import Dict
+from pyg_base._eq import eq
 from pyg_base._zip import zipper, lens
 from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan, is_num
 from pyg_base._tree import is_tree, tree_to_table
@@ -440,18 +441,22 @@ class dictable(Dict):
         else:
             super(dictable, self).__delitem__(attr)
     
-    # def _encode(self):
-    #     """
-    #     We override the encoding method for dictable by enforcing columns to be specified as part of the dict.
-    #     This ensures that when constructed from mongodb, old columns that may still be part of the cell are not included in the construction
-
-    #     """
-    #     res = {k : _encode(v) for k, v in self.items()}
-    #     if _obj not in res:
-    #         res[_obj] = _encode(type(self))
-    #     res['columns'] = self.columns
-    #     return res
-
+    def if_else(self, condition, if_true, if_false):
+        """
+        
+        allows for partial evaluation. if_true and if_none are only evaluated pending on condition
+        
+        table.iff(lambda k: k is None, )
+        """
+        values = []
+        for row in self:
+            if row[condition]:
+                values.append(row[if_true])
+            else:
+                values.append(row[if_false])
+        return values
+        
+    
     def inc(self, *functions, **filters):
         """
         performs a filter on what rows to include
