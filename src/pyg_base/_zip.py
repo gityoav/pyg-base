@@ -64,9 +64,9 @@ def zipper(*values):
     zipped values
 
     """
-    values = [list(value) if is_iterable(value) else [value] for value in values]
+    values = [value if is_iterable(value) else [value] for value in values]
     n = lens(*values)
     if n>1:
-        values = [value * n if len(value) == 1 else value for value in values]
+        values = [list(value) * n if is_iterable(value) and len(value) == 1 else value for value in values]
     return zip(*values)
 
