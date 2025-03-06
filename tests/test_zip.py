@@ -15,6 +15,10 @@ def test_zipper():
         assert dict(zipper(d.keys(), d.values())) == d
 
     assert list(zipper(np.array([1]), np.array([2]))) == [(1,2)]
+    assert list(zipper(np.array([1]), np.array([1,2,3]))) == [(1, 1), (1, 2), (1, 3)]
+    assert list(zipper(dict(a = 0).values(), np.array([1]), np.array([1,2,3]))) == [(0,1,1), (0,1,2), (0,1,3)]
+    
+    
 
 
 def test_lens():
