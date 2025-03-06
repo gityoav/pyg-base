@@ -18,7 +18,11 @@ def test_zipper():
     assert list(zipper(np.array([1]), np.array([1,2,3]))) == [(1, 1), (1, 2), (1, 3)]
     assert list(zipper(dict(a = 0).values(), np.array([1]), np.array([1,2,3]))) == [(0,1,1), (0,1,2), (0,1,3)]
     
-    
+    assert list(zipper(zip([1,2,3], [4,5,6]), 4)) == [((1, 4), 4), ((2, 5), 4), ((3, 6), 4)]
+    assert list(zipper(zip([1,2,3], [4,5,6]), [4,5,6])) == [((1, 4), 4), ((2, 5), 5), ((3, 6), 6)]
+    assert list(zipper(zip([1], [4]), 4)) == [((1, 4), 4)]
+
+
 
 def test_lens():
     assert lens([1,2,3,4], [1,2,3,4], [1,2,3,4]) == 4
