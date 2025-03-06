@@ -11,6 +11,11 @@ def test_zipper():
     with pytest.raises(ValueError):
         zipper([1,2,3,4], [1,2,3])
     
+    for d in [dict(a = 1), dict(a = 1, b = 2), dict(a = 1, b = 2, c = 3)]:
+        assert dict(zipper(d.keys(), d.values())) == d
+
+    assert list(zipper(np.array([1]), np.array([2]))) == [(1,2)]
+
 
 def test_lens():
     assert lens([1,2,3,4], [1,2,3,4], [1,2,3,4]) == 4
