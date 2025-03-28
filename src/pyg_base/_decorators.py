@@ -128,7 +128,7 @@ class wrapper(dictattr):
                 f = f.function
 
         super(wrapper, self).__init__(*args, **kw)
-        self._fullargspec = None if function is None else getargspec(function)
+        self._fullargspec = None
         self['function'] = function
         bad_keys = [key for key in kwargs if key.startswith('_')]
         if len(bad_keys):

@@ -1,4 +1,4 @@
-from pyg_base import getargs, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value
+from pyg_base import getargs, getargspec, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value
 from pyg_base._decorators import _str 
 import numpy as np
 import pytest
@@ -6,14 +6,19 @@ import pytest
 
 def test_cache_fullargspec():
     f = try_none(lambda v: v)
-    assert f._fullargspec == f.fullargspec
+    assert f._fullargspec is None 
+    args = getargs(f)
+    assert args == ['v']
+    assert f._fullargspec == getargspec(lambda v: v)
+    assert f.fullargspec == getargspec(lambda v: v)
     assert getargs(f) == ['v']
     f = try_none()
     assert getargs(f) == []
     assert f._fullargspec is None
     f = f(lambda v: v)    
-    assert f._fullargspec == f.fullargspec
-    assert getargs(f) == ['v']
+    assert f._fullargspec is None
+    assert f.fullargspec == getargspec(lambda v: v)
+    assert f._fullargspec == getargspec(lambda v: v)
     
 
 def test_wrapper():
