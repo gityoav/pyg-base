@@ -12,6 +12,7 @@ from inspect import FullArgSpec
 
 __all__ = ['wrapper', 'try_back', 'try_nan', 'try_none', 'try_zero', 'try_false', 'try_true', 'try_list', 'timer']
 _function = 'function'
+_spec = 'function_fullargspec'
 
 class wrapper(dictattr):
     """
@@ -128,8 +129,8 @@ class wrapper(dictattr):
                 f = f.function
 
         super(wrapper, self).__init__(*args, **kw)
-        self._fullargspec = None
-        self['function'] = function
+        self[_spec] = None
+        self[_function] = function
         bad_keys = [key for key in kwargs if key.startswith('_')]
         if len(bad_keys):
             raise ValueError('Cannot wrap _hidden parameters %s'%bad_keys)
@@ -141,32 +142,32 @@ class wrapper(dictattr):
 
     @property
     def __name__(self):
-        return getattr(self.function, '__name__', 'pyg_base.wrapper(unnamed)')
+        return getattr(self[_function], '__name__', 'pyg_base.wrapper(unnamed)')
     
     @property
     def __wrapped__(self):
-        return self.function
+        return self[_function]
 
     @property
     def fullargspec(self):
-        if self._fullargspec is None:
-            self._fullargspec = getargspec(self.function)
-        return self._fullargspec
+        if self[_spec] is None:
+            self[_spec] = getargspec(self[_function])
+        return self[_spec]
 
     def __repr__(self):
-        return '%s(%s)'%(self.__class__.__name__, dict(self))
+        return '%s(%s)'%(self.__class__.__name__, dict(self - 'wrapper_function_spec'))
 
     __str__ = __repr__ 
 
     @property
     def _kwargs(self):
-        return {key: value for key, value in self.items() if key!='function'}
+        return {key: value for key, value in self.items() if key!=_function and key!=_spec}
 
     def __call__(self, *args, **kwargs):
-        if self.function is None and len(args) == 1 and len(kwargs) == 0:
+        if self[_function] is None and len(args) == 1 and len(kwargs) == 0:
             return type(self)(function = args[0], **self._kwargs)
         else:
-            return getattr(self, 'wrapped', self.function)(*args, **kwargs)
+            return getattr(self, 'wrapped', self[_function])(*args, **kwargs)
     
 class try_back(wrapper):
     """
@@ -361,6 +362,7 @@ class kwargs_support(wrapper):
     """
     def __init__(self, function = None):
         super(kwargs_support, self).__init__(function = function)
+    
     @property
     def _args(self):
         return getargs(self.function)

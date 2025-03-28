@@ -1,25 +1,38 @@
-from pyg_base import getargs, getargspec, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value
-from pyg_base._decorators import _str 
+from pyg_base import getargs, getargspec, dictable, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value, kwargs_support
+from pyg_base._decorators import _str , _spec
+
 import numpy as np
 import pytest
 
 
 def test_cache_fullargspec():
     f = try_none(lambda v: v)
-    assert f._fullargspec is None 
+    assert f[_spec] is None 
     args = getargs(f)
     assert args == ['v']
-    assert f._fullargspec == getargspec(lambda v: v)
+    assert f[_spec] == getargspec(lambda v: v)
     assert f.fullargspec == getargspec(lambda v: v)
     assert getargs(f) == ['v']
     f = try_none()
     assert getargs(f) == []
-    assert f._fullargspec is None
+    assert f[_spec] is None
     f = f(lambda v: v)    
-    assert f._fullargspec is None
+    assert f[_spec] is None
     assert f.fullargspec == getargspec(lambda v: v)
-    assert f._fullargspec == getargspec(lambda v: v)
+    assert f[_spec]== getargspec(lambda v: v)
     
+def test_cache_fullargspec_in_chain():
+    f = try_none(lambda v: v)
+    assert getargs(f) == ['v']
+    g = kwargs_support(f)
+    assert g.function == f
+    assert getargs(g) == getargs(f)
+    assert g[_spec] == getargspec(lambda v: v)
+
+    rs  = dictable(v = [1,2,3])
+    rs = rs(w = g)
+    assert rs.w == rs.v
+
 
 def test_wrapper():
     class and_add(wrapper):
