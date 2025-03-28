@@ -69,8 +69,13 @@ def argspec_add(fullargspec, **update):
     new_defaults = tuple([update[key] for key in new_keys])
     args = fullargspec.args + new_keys
     defaults = (fullargspec.defaults or ()) + new_defaults 
-    res = inspect.FullArgSpec(args = args, varargs = fullargspec.varargs, varkw = fullargspec.varkw, defaults = defaults, kwonlyargs = fullargspec.kwonlyargs, 
-                               kwonlydefaults = fullargspec.kwonlydefaults, annotations = fullargspec.annotations)
+    res = type(fullargspec)(args = args, 
+                            varargs = fullargspec.varargs, 
+                            varkw = fullargspec.varkw, 
+                            defaults = defaults, 
+                            kwonlyargs = fullargspec.kwonlyargs, 
+                            kwonlydefaults = fullargspec.kwonlydefaults, 
+                            annotations = fullargspec.annotations)
     return res
 
 def getargs(function, n = 0):
@@ -238,6 +243,8 @@ def argspec_required(function):
     return argspec.args if argspec.defaults is None else argspec.args[:-len(argspec.defaults)]  
 
 
+_KEYS = {'annotations','args', 'defaults','kwonlyargs','kwonlydefaults','varargs', 'varkw', 'keywords'}
+
 def argspec_update(argspec, **kwargs):
     """
     generic function to create new FullArgSpec (python 3) or normal ArgSpec (python 2)
@@ -255,6 +262,7 @@ def argspec_update(argspec, **kwargs):
     
     :Example:
     ---------
+    >>> from pyg_base import as_DictArgSpec, DictArgSpec
     >>> f = lambda a, b =1 : a + b
     >>> argspec = getargspec(f)    
     >>> assert argspec_update(argspec, args = ['a', 'b', 'c']) == inspect.FullArgSpec(**{'annotations': {},
@@ -264,11 +272,20 @@ def argspec_update(argspec, **kwargs):
                                                                                  'kwonlydefaults': None,
                                                                                  'varargs': None,
                                                                                  'varkw': None})
+
+    >>> argspec = as_DictArgSpec(getargspec(f))
+    >>> assert argspec_update(argspec, args = ['a', 'b', 'c']) == DictArgSpec(**{'annotations': {},
+                                                                                 'args': ['a', 'b', 'c'],
+                                                                                 'defaults': (1,),
+                                                                                 'kwonlyargs': [],
+                                                                                 'kwonlydefaults': None,
+                                                                                 'varargs': None,
+                                                                                 'varkw': None})
+
     """
-    tp = type(argspec)
-    params = {key : getattr(argspec, key) for key in dir(tp)  if not key.startswith('_') and key not in ('count', 'index') }
+    params = {key : getattr(argspec, key) for key in dir(argspec) if key in _KEYS}
     params.update(kwargs)
-    return tp(**params)
+    return type(argspec)(**params)
 
 
 def kwargs2args(function, args, kwargs):

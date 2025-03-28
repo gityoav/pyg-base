@@ -14,6 +14,20 @@ __all__ = ['wrapper', 'try_back', 'try_nan', 'try_none', 'try_zero', 'try_false'
 _function = 'function'
 _spec = 'function_fullargspec'
 
+
+class DictArgSpec(dictattr):
+    pass
+
+def as_DictArgSpec(argspec):
+    return DictArgSpec(args = argspec.args,
+                        varargs=argspec.varargs, 
+                        varkw=argspec.varkw, 
+                        defaults=argspec.defaults, 
+                        kwonlyargs=argspec.kwonlyargs, 
+                        kwonlydefaults=argspec.kwonlydefaults, 
+                        annotations=argspec.annotations)
+
+
 class wrapper(dictattr):
     """
     A base class for all decorators. It is similar to functools.wraps but better. See below why wrapt cannot be used...
@@ -138,7 +152,7 @@ class wrapper(dictattr):
             attr = '__%s__'%attr
             if hasattr(self.function, attr):
                 setattr(self, attr, getattr(self.function, attr))
-        
+                        
 
     @property
     def __name__(self):
@@ -151,7 +165,7 @@ class wrapper(dictattr):
     @property
     def fullargspec(self):
         if self[_spec] is None:
-            self[_spec] = getargspec(self[_function])
+            self[_spec] = as_DictArgSpec(getargspec(self[_function]))
         return self[_spec]
 
     def __repr__(self):

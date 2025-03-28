@@ -1,4 +1,4 @@
-from pyg_base import getargs, getargspec, dictable, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value, kwargs_support
+from pyg_base import as_DictArgSpec, getargs, getargspec, dictable, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value, kwargs_support
 from pyg_base._decorators import _str , _spec
 
 import numpy as np
@@ -7,27 +7,29 @@ import pytest
 
 def test_cache_fullargspec():
     f = try_none(lambda v: v)
+    spec = as_DictArgSpec(getargspec(lambda v: v))
     assert f[_spec] is None 
     args = getargs(f)
     assert args == ['v']
-    assert f[_spec] == getargspec(lambda v: v)
-    assert f.fullargspec == getargspec(lambda v: v)
+    assert f[_spec] == spec
+    assert f.fullargspec == spec
     assert getargs(f) == ['v']
     f = try_none()
     assert getargs(f) == []
     assert f[_spec] is None
     f = f(lambda v: v)    
     assert f[_spec] is None
-    assert f.fullargspec == getargspec(lambda v: v)
-    assert f[_spec]== getargspec(lambda v: v)
+    assert f.fullargspec == spec
+    assert f[_spec]== spec
     
 def test_cache_fullargspec_in_chain():
     f = try_none(lambda v: v)
+    spec = as_DictArgSpec(getargspec(lambda v: v))
     assert getargs(f) == ['v']
     g = kwargs_support(f)
     assert g.function == f
     assert getargs(g) == getargs(f)
-    assert g[_spec] == getargspec(lambda v: v)
+    assert g[_spec] == spec
 
     rs  = dictable(v = [1,2,3])
     rs = rs(w = g)
@@ -75,7 +77,7 @@ def test_try():
     for t, v in [(try_none, None), (try_zero,0), (try_nan,np.nan), (try_true, True), (try_false, False), (try_list, [])]:
         assert eq(t(f)(5), v)
     assert try_value(f, verbose = True)(4) is None
-    assert try_value(f, return_value = 'should log', verbose = True)(4) == 'should log'
+    assert try_value(f, value = 'should log', verbose = True)(4) == 'should log'
     
     
         
@@ -85,7 +87,7 @@ def test_try_back():
     assert try_back(f)(5) == 5
     assert try_back(f)('hello') == 'h'
     assert try_back(f).__wrapped__ == f
-    assert try_back(f).__repr__().startswith("try_back({'function':")
+    assert try_back(f).__repr__().startswith("try_back({'function")
     
 def test_fail_with_hidden_params():
     def f(_a):
