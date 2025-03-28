@@ -128,6 +128,7 @@ class wrapper(dictattr):
                 f = f.function
 
         super(wrapper, self).__init__(*args, **kw)
+        self._fullargspec = None if function is None else getargspec(function)
         self['function'] = function
         bad_keys = [key for key in kwargs if key.startswith('_')]
         if len(bad_keys):
@@ -136,6 +137,7 @@ class wrapper(dictattr):
             attr = '__%s__'%attr
             if hasattr(self.function, attr):
                 setattr(self, attr, getattr(self.function, attr))
+        
 
     @property
     def __name__(self):
@@ -147,7 +149,9 @@ class wrapper(dictattr):
 
     @property
     def fullargspec(self):
-        return getargspec(self.function)
+        if self._fullargspec is None:
+            self._fullargspec = getargspec(self.function)
+        return self._fullargspec
 
     def __repr__(self):
         return '%s(%s)'%(self.__class__.__name__, dict(self))

@@ -1,7 +1,20 @@
-from pyg_base import dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value
+from pyg_base import getargs, dt, try_none, try_back, try_zero, presync, wrapper, eq, try_list, try_true, try_false, try_nan, try_value
 from pyg_base._decorators import _str 
 import numpy as np
 import pytest
+
+
+def test_cache_fullargspec():
+    f = try_none(lambda v: v)
+    assert f._fullargspec == f.fullargspec
+    assert getargs(f) == ['v']
+    f = try_none()
+    assert getargs(f) == []
+    assert f._fullargspec is None
+    f = f(lambda v: v)    
+    assert f._fullargspec == f.fullargspec
+    assert getargs(f) == ['v']
+    
 
 def test_wrapper():
     class and_add(wrapper):
@@ -44,7 +57,7 @@ def test_try():
     for t, v in [(try_none, None), (try_zero,0), (try_nan,np.nan), (try_true, True), (try_false, False), (try_list, [])]:
         assert eq(t(f)(5), v)
     assert try_value(f, verbose = True)(4) is None
-    assert try_value(f, 'should log', verbose = True)(4) == 'should log'
+    assert try_value(f, return_value = 'should log', verbose = True)(4) == 'should log'
     
     
         
