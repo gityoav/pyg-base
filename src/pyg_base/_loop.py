@@ -174,11 +174,13 @@ class loops(wrapper):
 
     def __init__(self, function = None, types = None):
         super(loops, self).__init__(function = function, types = as_tuple(types))
+        self._cached_getargs = None
 
     @property
     def first(self):
-        args = getargs(self)
-        return args[0] if len(args) else None
+        if self._cached_getargs is None:
+            self._cached_getargs = getargs(self)
+        return self._cached_getargs[0] if len(self._cached_getargs) else None
     
     def T(self, arg, args, kwargs):
         arg_ = _T(arg)
