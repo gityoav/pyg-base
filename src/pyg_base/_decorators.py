@@ -192,8 +192,8 @@ class try_back(wrapper):
     >>> f = lambda a: a[0]
     >>> assert try_back(f)('hello') == 'h' and try_back(f)(5) == 5
     """
-    def __init__(self, function = None):
-        super(try_back, self).__init__(function = function)
+    def __init__(self, function = None, function_fullargspec = None):
+        super(try_back, self).__init__(function = function, function_fullargspec = function_fullargspec)
     def wrapped(self, *args, **kwargs):
         try:
             return self.function(*args, **kwargs)
@@ -226,8 +226,8 @@ class try_value(wrapper):
 
     
     """
-    def __init__(self, function = None, repeat = 0, sleep = 0, return_value = True, value = None, verbose = None):
-        super(try_value, self).__init__(function = function, repeat = repeat, sleep = sleep, return_value = return_value, value = value, verbose = verbose)
+    def __init__(self, function = None, repeat = 0, sleep = 0, return_value = True, value = None, verbose = None, function_fullargspec = None):
+        super(try_value, self).__init__(function = function, repeat = repeat, sleep = sleep, return_value = return_value, value = value, verbose = verbose, function_fullargspec = None)
     def wrapped(self, *args, **kwargs):
         for i in range(self.repeat):
             try: 
@@ -278,8 +278,8 @@ class do_if(wrapper):
     >>> assert do_if(first_element, (str, list))(('not', 'working', 'on', 'tuple')) == ('not', 'working', 'on', 'tuple')
     
     """
-    def __init__(self, function = None, inc = None, exc = None):
-        super(do_if, self).__init__(function = function, inc = inc, exc = exc)
+    def __init__(self, function = None, inc = None, exc = None, function_fullargspec = None):
+        super(do_if, self).__init__(function = function, inc = inc, exc = exc, function_fullargspec = None)
     def wrapped(self, *args, **kwargs):
         if self.inc is None and self.exc is None: 
             return self.function(*args, **kwargs)
@@ -343,8 +343,8 @@ class timer(wrapper):
     >>> assert isinstance(evaluation_time, datetime.timedelta)
     """
     
-    def __init__(self, function, n = 1, time = False):
-        super(timer, self).__init__(function = function, n = n, time = time)
+    def __init__(self, function, n = 1, time = False, function_fullargspec = None):
+        super(timer, self).__init__(function = function, n = n, time = time, function_fullargspec = function_fullargspec)
 
     def wrapped(self, *args, **kwargs):
         t0 = datetime.datetime.now()
@@ -374,8 +374,8 @@ class kwargs_support(wrapper):
     >>> assert f(1,2, what_is_this = 3, not_used = 4, ignore_this_too = 5) == 3
     
     """
-    def __init__(self, function = None):
-        super(kwargs_support, self).__init__(function = function)
+    def __init__(self, function = None, function_fullargspec = None):
+        super(kwargs_support, self).__init__(function = function, function_fullargspec = function_fullargspec)
     
     @property
     def _args(self):
@@ -409,13 +409,13 @@ class kwpartial(wrapper):
     >>> assert d[self] == 3 # z and x and y are presented
 
     """
-    def __init__(self, function = None, kw = None, **keywords):
+    def __init__(self, function = None, kw = None, function_fullargspec = None, **keywords):
         argspec = getargspec(function)
         if argspec.varkw is None:
             raise ValueError('kwpartial only supports function with **kwargs support')
         if argspec.varargs is not None:
             raise ValueError('kwpartial only support *args-less function, but function has *%s'%argspec.varargs)
-        super(kwpartial, self).__init__(function = function, keywords = keywords, kw = kw)
+        super(kwpartial, self).__init__(function = function, keywords = keywords, kw = kw, function_fullargspec = function_fullargspec)
 
     @property
     def fullargspec(self):

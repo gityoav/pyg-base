@@ -172,8 +172,8 @@ class loops(wrapper):
     
     """
 
-    def __init__(self, function = None, types = None):
-        super(loops, self).__init__(function = function, types = as_tuple(types))
+    def __init__(self, function = None, types = None, function_fullargspec = None):
+        super(loops, self).__init__(function = function, types = as_tuple(types), function_fullargspec = function_fullargspec)
 
     @property
     def first(self):
@@ -324,8 +324,8 @@ class pd2np(wrapper):
     >>> assert pd2np(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
     
     """
-    def __init__(self, function = None, exc = None):
-        super(pd2np, self).__init__(function = function, exc = as_list(exc))
+    def __init__(self, function = None, exc = None, function_fullargspec = None):
+        super(pd2np, self).__init__(function = function, exc = as_list(exc), function_fullargspec = function_fullargspec)
     
     def wrapped(self, *args, **kwargs):
         arg = getcallarg(self.function, args, kwargs)
@@ -524,7 +524,7 @@ class grab_parameter_from_dict(wrapper):
     
     """
     
-    def __init__(self, function = None, parameters = None, strict = None, **kwargs):
+    def __init__(self, function = None, parameters = None, strict = None, function_fullargspec = None, **kwargs):
         if strict is None:
             strict = False if parameters is None else True
         if isinstance(parameters, (list, str)):
@@ -533,7 +533,7 @@ class grab_parameter_from_dict(wrapper):
         if kwargs:
             parameters = parameters or {}
             parameters.update(kwargs)
-        super(grab_parameter_from_dict, self).__init__(function = function, parameters = parameters, strict = strict)
+        super(grab_parameter_from_dict, self).__init__(function = function, parameters = parameters, strict = strict, function_fullargspec = function_fullargspec)
 
     def wrapped(self, *args, **kwargs):
         spec = getargspec(self.function)
