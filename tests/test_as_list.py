@@ -11,6 +11,7 @@ def test_as_list():
     assert as_list({1: 1}.values()) == [1]
     assert as_list(range(1,2)) == [1]
     assert as_list(zip([1,2], [3,4])) == [(1, 3), (2, 4)]
+    assert as_list(set([1,2,3])) == [1,2,3]
 
 def test_as_tuple():
     assert as_tuple(None) == ()

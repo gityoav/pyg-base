@@ -2,7 +2,7 @@ from _collections_abc import dict_keys, dict_values
 from pyg_base._eq import eq
 
 def is_rng(value):
-    return isinstance(value, (list, tuple, range, dict_keys, dict_values, zip) )
+    return isinstance(value, (list, tuple, range, set, dict_keys, dict_values, zip) )
 
 
 __all__ = ['as_list', 'as_tuple', 'first', 'last', 'is_rng', 'passthru']
