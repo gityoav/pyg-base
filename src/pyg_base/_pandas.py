@@ -987,8 +987,8 @@ class presync(wrapper):
     >>> assert eq(new, old)
     """
     
-    def __init__(self, function = None, index = 'inner', method = None, columns = 'inner', default = np.nan):
-        super(presync, self).__init__(function = function, index = index, method = method, columns = columns , default = default)
+    def __init__(self, function = None, index = 'inner', method = None, columns = 'inner', default = np.nan, function_fullargspec = None):
+        super(presync, self).__init__(function = function, index = index, method = method, columns = columns , default = default, function_fullargspec = function_fullargspec)
     
     @property
     def ij(self):

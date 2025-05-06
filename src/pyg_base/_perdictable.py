@@ -283,8 +283,8 @@ class perdictable(wrapper):
     >>> assert res.find_data(key = 'y').data == 5  # although calculated before, we recalculate as its expiry is in the future
     
     """
-    def __init__(self, function = None, on = None, renames = None, defaults = None, if_none = False, output_is_input = True, col = 'data', include_inputs = False):
-        super(perdictable, self).__init__(function = function, on = on, renames = renames, defaults = defaults, if_none = if_none, output_is_input = output_is_input, col = col, include_inputs  = include_inputs)
+    def __init__(self, function = None, on = None, renames = None, defaults = None, if_none = False, output_is_input = True, col = 'data', include_inputs = False, function_fullargspec = None):
+        super(perdictable, self).__init__(function = function, on = on, renames = renames, defaults = defaults, if_none = if_none, output_is_input = output_is_input, col = col, include_inputs  = include_inputs, function_fullargspec = function_fullargspec)
     
     @property
     def output(self):

@@ -51,8 +51,8 @@ def test_wrapper():
 
     
     class and_add_version_2(wrapper):
-        def __init__(self, function = None, add = 3):
-            super(and_add_version_2, self).__init__(function = function, add = add)
+        def __init__(self, function = None, add = 3, function_fullargspec = None):
+            super(and_add_version_2, self).__init__(function = function, add = add, function_fullargspec = function_fullargspec)
         def wrapped(self, *args, **kwargs):
             return self.function(*args, **kwargs) + self.add
 
