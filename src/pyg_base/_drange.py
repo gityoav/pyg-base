@@ -100,7 +100,7 @@ def as_time(t = None):
 
 _LY = dict(b = DAILY, d = DAILY, w = WEEKLY, m = MONTHLY, q = MONTHLY, y = YEARLY, h = HOURLY, n = MINUTELY, s = SECONDLY)
 
-def drange(t0 = None, t1 = None, bump = None):
+def drange(t0 = None, t1 = None, bump = None, eom = None):
     """
     A quick and happy wrapper for dateutil.rrule
 
@@ -133,6 +133,10 @@ def drange(t0 = None, t1 = None, bump = None):
     ---------
     >>> t0 = dt(2020); t1 = dt(2021); bump = datetime.timedelta(hours = 4)
 
+    Example:
+    --------
+    >>> from pyg_base import * 
+    >>> t0 = dt(2022,8,31) ; t1 = dt(0); bump = '3m'
     """
     t0, t1 = date_range(t0, t1)  
     if t0 == t1:
@@ -169,7 +173,7 @@ def drange(t0 = None, t1 = None, bump = None):
     elif is_period(bump):
         bump = bump.lower()
         bmp = period.search(bump).group()
-        if bump == bmp: ## single bump
+        if False: #bump == bmp: ## single bump
             prd = bump[-1]
             interval = int(bump[:-1]) * dict(q = 3).get(prd ,1)
             if (t1-t0).days * interval < 0:
@@ -182,32 +186,55 @@ def drange(t0 = None, t1 = None, bump = None):
                 return res            
             else:
                 return list(rrule(freq, interval = interval, dtstart = t0, until = t1))
+        elif bmp == bump:
+            prd = bump[-1]
+            interval = int(bump[:-1])
+            if prd == 'b':
+                t0 = dt_bump(t0, '0b')
+            res = [t0]
+            t = dt_bump(t0, bump, eom = eom)
+            i = 1
+            if t1>t0: 
+                if t <= t0:
+                    raise ValueError('cannot move forward from %s to %s using %s'%(t0, t1, bump))
+                while t<=t1:
+                    res.append(t)
+                    i+=1
+                    t = dt_bump(t0, f'{interval * i}{prd}', eom = eom)
+            elif t1<t0: 
+                if t >= t0:
+                    raise ValueError('cannot move back from %s to %s using %s'%(t0, t1, bump))
+                while t>=t1:
+                    res.append(t)
+                    i+=1
+                    t = dt_bump(t0, f'{interval * i}{prd}', eom = eom)
+            return res
         else:
             t = t0
             res = []
             if t1>t0: 
-                if dt_bump(t0, bump) <= t0:
+                if dt_bump(t0, bump, eom = eom) <= t0:
                     raise ValueError('cannot move forward from %s to %s using %s'%(t0, t1, bump))
                 while t<=t1:
                     res.append(t)
-                    t = dt_bump(t, bump)
+                    t = dt_bump(t, bump, eom = eom)
                 return res
             elif t1<t0: 
-                if dt_bump(t0, bump) >= t0:
+                if dt_bump(t0, bump, eom = eom) >= t0:
                     raise ValueError('cannot move back from %s to %s using %s'%(t0, t1, bump))
                 while t>=t1:
                     res.append(t)
-                    t = dt_bump(t, bump)
+                    t = dt_bump(t, bump, eom = eom)
                 return res
             else:
                 return [t0]
                             
 
 class _calendar():
-    def dt_bump(self, t, bump):
-        return dt_bump(t, bump)
+    def dt_bump(self, t, bump, eom = False):
+        return dt_bump(t, bump, eom = eom)
     
-    def date_range(self, t0 = None, t1 = None):
+    def date_range(self, t0 = None, t1 = None, eom = False):
         """
         creates a date range boundaries from start/end points
     
@@ -237,23 +264,23 @@ class _calendar():
             if t0 is None:
                 return [TMIN, t]
             elif is_bump(t0):
-                return sorted([t, self.dt_bump(t, t0)])
+                return sorted([t, self.dt_bump(t, t0, eom = eom)])
             else:
                 return sorted([t, dt(t0)])
         elif is_bump(t1):
             if t0 is None:
-                return [TMIN, self.dt_bump(t, t1)]
+                return [TMIN, self.dt_bump(t, t1, eom = eom)]
             elif is_bump(t0):
-                return [self.dt_bump(t, t0), dt_bump(t, t1)]
+                return [self.dt_bump(t, t0, eom = eom), dt_bump(t, t1, eom = eom)]
             else:
                 t0 = dt(t0)
-                return [t0, self.dt_bump(t0, t1)]
+                return [t0, self.dt_bump(t0, t1, eom = eom)]
         else:
             t1 = dt(t1)
             if t0 is None:
                 return [TMIN, t1]
             elif is_bump(t0):
-                return [self.dt_bump(t1, t0), t1]
+                return [self.dt_bump(t1, t0, eom = eom), t1]
             else:
                 return [dt(t0), t1]
 
@@ -564,7 +591,7 @@ class Calendar(Dict, _calendar):
         else:
             raise ValueError(f'date adjustment {adj} must start with f(ollowing), p(revious) or m(odified)')
 
-    def dt_bump(self, t, bump, adj = None):
+    def dt_bump(self, t, bump, adj = None, eom = None):
         """
         adds a bump to a date
 
@@ -594,10 +621,10 @@ class Calendar(Dict, _calendar):
                         t = self.adjust(t, adj = 'p')                        
                     t = self.add(t, int(bmp[:-1]), adj = adj)
                 else:
-                    t = dt_bump(t, bmp)
+                    t = dt_bump(t, bmp, eom = eom)
             return t
         else:
-            return dt_bump(t, bump)
+            return dt_bump(t, bump, eom = eom)
         
     def clock(self, date):
         self._populate()
@@ -655,7 +682,7 @@ class Calendar(Dict, _calendar):
         adj = adj or self.adj
         return self.dt2int[self.adjust(t1, adj)] - self.dt2int[self.adjust(t0, adj)]
     
-    def drange(self, t0 = None, t1 = None, bump = None):
+    def drange(self, t0 = None, t1 = None, bump = None, eom = None):
         t0, t1 = self.date_range(t0, t1)
         if is_str(bump) and bump[-1] == 'b':
             self._populate()
@@ -664,7 +691,7 @@ class Calendar(Dict, _calendar):
             i1 = self.dt2int[self.adjust(t1)]
             return [self.int2dt[i] for i in range(i0, i1+b, b)]
         else:
-            return drange(t0, t1, bump)
+            return drange(t0, t1, bump, eom = eom)
     
     def filter(self, ts, day_start = None, day_end = None):
         return ts[self.mask(ts, day_start = day_start, day_end = day_end)]

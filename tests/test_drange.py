@@ -3,6 +3,7 @@ import datetime
 import pandas as pd; import numpy as np
 import pytest
 from pyg_base._drange import _quarter_clock
+from dateutil.rrule import rrule, MONTHLY
 
 t0 = dt(0)
 def test_date_range():
@@ -32,7 +33,7 @@ def test_calendar_weekend():
 
 
 def test_drange_intraday():
-    assert drange(dt(2000), dt_bump(2000, '35h'), '7h') == [datetime.datetime(2000, 1, 1, 0, 0),
+    assert drange(t0 = dt(2000), t1 = dt_bump(2000, '35h'), bump = '7h') == [datetime.datetime(2000, 1, 1, 0, 0),
                                                              datetime.datetime(2000, 1, 1, 7, 0),
                                                              datetime.datetime(2000, 1, 1, 14, 0),
                                                              datetime.datetime(2000, 1, 1, 21, 0),
@@ -100,6 +101,35 @@ def test_drange_bump_timedelta():
 
 
     
+def test_drange_eom():
+    assert drange(dt(2022,8,31), dt(2024), '3m') == [datetime.datetime(2022, 8, 31, 0, 0),
+                                                     datetime.datetime(2022, 12, 1, 0, 0),
+                                                     datetime.datetime(2023, 3, 3, 0, 0),
+                                                     datetime.datetime(2023, 5, 31, 0, 0),
+                                                     datetime.datetime(2023, 8, 31, 0, 0),
+                                                     datetime.datetime(2023, 12, 1, 0, 0)]
+
+    assert drange(dt(2022,8,31), dt(2024), '3m', eom = True) == [datetime.datetime(2022, 8, 31, 0, 0),
+                                                                 datetime.datetime(2022, 11, 30, 0, 0),
+                                                                 datetime.datetime(2023, 2, 28, 0, 0),
+                                                                 datetime.datetime(2023, 5, 31, 0, 0),
+                                                                 datetime.datetime(2023, 8, 31, 0, 0),
+                                                                 datetime.datetime(2023, 11, 30, 0, 0)]
+
+    assert drange(dt(2022,8,30), dt(2024), '3m', eom = 1) == [datetime.datetime(2022, 8, 30, 0, 0),
+                                                             datetime.datetime(2022, 11, 30, 0, 0),
+                                                             datetime.datetime(2023, 3, 2, 0, 0),
+                                                             datetime.datetime(2023, 5, 30, 0, 0),
+                                                             datetime.datetime(2023, 8, 30, 0, 0),
+                                                             datetime.datetime(2023, 11, 30, 0, 0)]
+
+    assert drange(dt(2022,8,30), dt(2024), '3m', eom = 2) == [datetime.datetime(2022, 8, 30, 0, 0),
+                                                                 datetime.datetime(2022, 11, 29, 0, 0),
+                                                                 datetime.datetime(2023, 2, 27, 0, 0),
+                                                                 datetime.datetime(2023, 5, 30, 0, 0),
+                                                                 datetime.datetime(2023, 8, 30, 0, 0),
+                                                                 datetime.datetime(2023, 11, 29, 0, 0)]
+
     
 def test_calendar_drange():
     cal = calendar('US', holidays = [dt(2000,1,4), dt(2000,1,10)])
@@ -259,4 +289,16 @@ def test_calendar_filter():
     assert len(cal.filter(bts)) == len(bts)
 
 
+def test_drange_avoids_rrule():
+    t0 = dt(2022,8,31)
+    t1 = dt(2024,1,1)    
+    bad_dates = list(rrule(MONTHLY, interval = 3, dtstart = t0, until = t1))
+    dates = drange(t0, t1, bump = '3m', eom = True)
+    assert [datetime.datetime(2022, 8, 31, 0, 0),
+             datetime.datetime(2022, 11, 30, 0, 0),
+             datetime.datetime(2023, 2, 28, 0, 0),
+             datetime.datetime(2023, 5, 31, 0, 0),
+             datetime.datetime(2023, 8, 31, 0, 0),
+             datetime.datetime(2023, 11, 30, 0, 0)]
 
+    dates = drange(t0, t1, bump = '3m', eom = False)

@@ -335,8 +335,18 @@ def is_bump(bump):
 
 _bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
 
-def dt_bump(t, *bumps, aggregate = 'last'):
+def dt_bump(t, *bumps, aggregate = 'last', eom = None):
     """
+    Parameters:
+    ---------- 
+    t: datetime
+    bumps: a list of date bumps, either in the form of int (days), or datetime.timedelta or "periods" such as '3m'
+    aggregate: if the bump yields a non-unique output, what is the output out of the possible answers
+    eom: True: think of "t" as a date from NEXT month 1st of month, apply the bumps to THAT. 
+         integer: think of the last eom days of the month as "eom" dates. In finance eom = 1 is common
+         This allows handling of bumps of "end of month dates"
+            
+    
     :Example:
     ---------
     >>> from pyg import *
@@ -364,12 +374,19 @@ def dt_bump(t, *bumps, aggregate = 'last'):
     >>> assert len(dt_bump(t, '1b')) < len(t) ## we have gone over the weekends and weekends are bumped forward together
     >>> assert (dt_bump(t, '1b') - dt_bump(t, '1b', aggregate = 'first')).max() == 2 ## 2 days for weekend 
     
-    t = dt(0); bumps = ('1h',)
+    Example: handling of eom
+    ------------------------
+    >>> t = dt(2022,8,31)
+    >>> assert dt_bump(t, '3m') == dt(2022, 12, 1)
+    >>> assert dt_bump(t, '3m', eom = True) == dt(2022, 11, 30)
+    >>> t = dt(2022,8,30)
+    >>> assert dt_bump(t, '6m') == dt(2023, 3, 2) ## since Feb has 28 days
+    >>> assert dt_bump(t, '6m', eom = True) == dt(2023,2, 27) ## both are a day before eom
     """
     bumps = as_list(bumps)
     if is_ts(t):
         res = t.copy()
-        res.index = [dt_bump(i, *bumps) for i in res.index]
+        res.index = [dt_bump(i, *bumps, aggregate=aggregate, eom = eom) for i in res.index]
         if len(set(res.index)) < len(res): 
             res.index.name = res.index.name or 'date'
             res = res.groupby(res.index.name).apply(aggregate)
@@ -383,6 +400,14 @@ def dt_bump(t, *bumps, aggregate = 'last'):
         elif isinstance(bump, (datetime.timedelta, du.relativedelta.relativedelta)):
             t = t + bump
         elif is_str(bump):
+            offset = None
+            if eom:
+                start_of_next_month = dt(t.year, t.month + 1, 1)
+                offset = start_of_next_month  - t
+                if eom is True or offset.days <= eom:
+                    t = start_of_next_month
+                else:
+                    offset = None
             bump = bump.lower()
             bump = _bumps.get(bump, bump)
             while period.search(bump) is not None:
@@ -416,9 +441,11 @@ def dt_bump(t, *bumps, aggregate = 'last'):
                     if wday + d > 4:
                         d+=2
                     t += DAY * d
+            if offset:
+                t = t - offset
             if len(bump):
                 try:
-                    return tz_convert(t, bump)
+                    t = tz_convert(t, bump)
                 except Exception:
                     raise ValueError('%s is not a period I know...'%bump)
         elif is_tz(bump):

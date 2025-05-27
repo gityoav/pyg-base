@@ -48,6 +48,18 @@ def test_dt_bump():
     for bmp in ['1d', '1m', '-3w', '4b', '1h', '2n', '6s']:
         assert dt(bmp) == dt_bump(0, bmp)
         
+
+def test_dt_bump_eom():
+    t = dt(2022,8,31)
+    assert dt_bump(t, '3m') == dt(2022, 12, 1)
+    assert dt_bump(t, '3m', eom = True) == dt(2022, 11, 30)
+    t = dt(2022,8,30)
+    assert dt_bump(t, '6m') == dt(2023, 3, 2) ## since Feb has 28 days
+    assert dt_bump(t, '6m', eom = True) == dt(2023,2, 27) ## both are a day before eom
+    assert dt_bump(t, '6m', eom = 1) == dt(2023,3, 2) ## treats just LAST day of month as eom
+    assert dt_bump(t, '6m', eom = 2) == dt(2023,2, 27) ## both are a day before eom
+
+        
 def test_dt2str_empty():
     assert dt2str(dt(2010,2,3), '') == '20100203'
     
