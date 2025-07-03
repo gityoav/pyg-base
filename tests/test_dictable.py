@@ -53,6 +53,12 @@ def test_dictable_init():
     assert res.b == [[2,4,6]]
 
 
+def test_dictable_setitem_multiple_columns():
+    rs = dictable(a = 2, b = [2,3,4])
+    rs['sum', 'prod'] = rs[lambda a,b: (a+b,a*b)] 
+    assert rs.sum == [4,5,6]
+    assert rs.prod == [4,6,8]
+
 
 def test_dictable_do_empty_list():
     d = dictable(a = [1,2,3], b = 4)

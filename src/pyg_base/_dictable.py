@@ -372,7 +372,11 @@ class dictable(Dict):
             value = value * n 
         else:
             raise ValueError('cannot set item of length %s in table of length %s'%(len(value), n))
-        super(dictable, self).__setitem__(str(key) if is_int(key) else key, value)
+        if isinstance(key, tuple):
+            for k,v in zipper(key, zipper(*value)):
+                super(dictable, self).__setitem__(str(k) if is_int(k) else k, list(v))
+        else:            
+            super(dictable, self).__setitem__(str(key) if is_int(key) else key, list(value))
     
     def __getitem__(self, item):
         if is_arr(item) and len(item.shape) == 1:
