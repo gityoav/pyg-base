@@ -1,4 +1,4 @@
-from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, is_tuple
+from pyg_base import dictable, read_csv, Dict, last, dictattr, alphabet, drange, dict_concat, dt, is_tuple, getargspec
 import pandas as pd
 import numpy as np
 import pytest
@@ -528,3 +528,23 @@ def test_dictable_if_else():
     rs = dictable(a = [1,2,3,4,5], b = [4,5,6,4,3], c = list('abcde'))
     assert rs.if_else(lambda a, b: a<b, 'a', 'b') == [1,2,3,4,3]
     assert rs.if_else(lambda a, b: a<b, lambda b,a: b-a, lambda a,b: a-b) == [3, 3, 3, 0, 2]
+
+
+def test_dictable_supports_dict_functions():
+    class fdict(dict):
+        def __init__(self, function, **kwargs):
+            super(fdict, self).__init__(kwargs | dict(function = function))
+        def __call__(self, *args, **kwargs):
+            return self['function'](*args, **kwargs)
+        @property
+        def fullargspec(self):
+            return getargspec(self['function'])
+    f = fdict(function = lambda a, b: a+b, b = 2)
+    rs = dictable(a = [1,2,3])    
+    assert rs[f] == [3,4,5]
+    rs = rs(c = f)
+    assert rs.c == [3,4,5]
+    rs = dictable(a = [1,2,3], b = [4,5,6])
+    assert rs[f] == [5,7,9]
+    rs = rs(c = f)
+    assert rs.c == [5,7,9]
