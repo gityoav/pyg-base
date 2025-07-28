@@ -133,6 +133,24 @@ def test_dictable_join_with_int_and_floats():
     assert len(a*b) == 4 and (a*b == a)
     assert len(b/a) == 1
 
+
+def test_dictable_join_modes():
+    a = dictable(a = [1,2,3], b = [None, 1, 2])
+    b = dictable(a = [1,2,3], b = [1, 2, None])
+    assert a.join(b, 'a', mode = 0).b == a.b
+    assert a.join(b, 'a', mode = 'l').b == a.b
+    assert a.join(b, 'a', mode = 'LEFT').b == a.b
+    assert a.join(b, 'a', mode = 'LHS').b == a.b
+    assert a.join(b, 'a', mode = 1).b == b.b
+    assert a.join(b, 'a', mode = 'r').b == b.b
+    assert a.join(b, 'a', mode = 'RIGHT').b == b.b
+    assert a.join(b, 'a', mode = 'RHS').b == b.b
+    assert a.join(b, 'a', mode = 'l|r').b == [1,1,2]
+    assert a.join(b, 'a', mode = 'r|l').b == [1,2,2]
+    assert a.join(b, 'a').b == [(None, 1), (1, 2), (2, None)]
+    assert a.join(b, 'a', mode = lambda lhs, rhs: (rhs, lhs)).b == [(1, None), (2, 1), (None, 2)]
+
+    
 # def test_dictable_init_from_cursor():
 #     t = mongo_table('test', 'test')
 #     t.drop()

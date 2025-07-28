@@ -1,18 +1,18 @@
 from _collections_abc import dict_keys, dict_values
 from pyg_base._as_list import as_list, as_tuple
 from pyg_base._as_float import as_float
-from pyg_base._dict import Dict
-from pyg_base._eq import eq
-from pyg_base._zip import zipper, lens
-from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan, is_num
-from pyg_base._tree import is_tree, tree_to_table
-from pyg_base._inspect import getargs
-from pyg_base._decorators import kwargs_support, try_none, try_back
-from pyg_base._dates import ndt
-from pyg_base._sort import sort, cmp
-from pyg_base._file import read_csv
 from pyg_base._cache import cache
+from pyg_base._dates import ndt
+from pyg_base._decorators import kwargs_support, try_none, try_back
+from pyg_base._dict import Dict
+from pyg_base._file import read_csv
+from pyg_base._inspect import getargs
 from pyg_base._logger import logger
+from pyg_base._sort import sort, cmp
+from pyg_base._tree import is_tree, tree_to_table
+from pyg_base._txt import lower
+from pyg_base._types import is_str, is_strs, is_arr, is_df, is_dicts, is_int, is_ints, is_tuple, is_bools, is_nan, is_num
+from pyg_base._zip import zipper, lens
 from pyg_npy import pd_read_npy
 from functools import reduce
 from pathlib import Path
@@ -102,6 +102,18 @@ def _is_path(path):
     path = path.lower()
     return len([x for x in ['.xlsx', '.xls', '.pickle', '.dictable', '.parquet', '.csv', '.npy', '.npa'] if path.endswith(x)]) > 0
         
+
+_modes = { 0:     lambda lhs,rhs:lhs,
+          'lhs':  lambda lhs,rhs:lhs,
+          'left': lambda lhs,rhs:lhs,
+          'l':    lambda lhs,rhs:lhs,
+          1:       lambda lhs,rhs:rhs,
+          'rhs':   lambda lhs,rhs:rhs,
+          'right': lambda lhs,rhs:rhs,
+          'r' :    lambda lhs,rhs:rhs,
+          'l|r': lambda lhs,rhs:rhs if lhs is None else lhs, ## left or right
+          'r|l': lambda lhs,rhs:lhs if rhs is None else rhs, ## right or left
+          }
 
 
 def _data_columns_as_dict(data, columns = None):
@@ -1062,8 +1074,9 @@ class dictable(Dict):
             By default we return both LHS values and RHS values as a tuple
             mode = 0/'left'/'lhs' : return the LHS value
             mode = 1/'right'/'rhs': returns RHS value
+            mode = 'l|r': return lhs if not None, else rhs
+            mode = 'r|l': return rhs if not None, else lhs
             mode = callable: apply that function
-        
         
 
         :Example: inner join
@@ -1093,6 +1106,7 @@ class dictable(Dict):
         >>> assert x.join(y, 'a', mode = add_).b == [11,22,33,44]
 
         """
+        mode = _modes.get(lower(mode), mode)
         _lcols = lcols
         if not isinstance(other, dictable):
             other = dictable(other)
@@ -1152,13 +1166,7 @@ class dictable(Dict):
             v= other[k]
             rtn[k] = sum([[v[r] for l in lid for r in rid] for lid, rid in zip(lids, rids)], [])            
         for k in jkeys:
-            if (is_str(mode) and mode[0].lower() == 'l') or mode == 0:
-                v = self[k]
-                rtn[k] = sum([[v[l] for l in lid for r in rid] for lid, rid in zip(lids, rids)], [])
-            elif (is_str(mode) and mode[0].lower() == 'r') or mode == 1:
-                v = other[k]
-                rtn[k] = sum([[v[r] for l in lid for r in rid] for lid, rid in zip(lids, rids)], [])
-            elif callable(mode):
+            if callable(mode):
                 lv = self[k]
                 rv = other[k]
                 rtn[k] = sum([[mode(lv[l], rv[r]) for l in lid for r in rid] for lid, rid in zip(lids, rids)], [])            
