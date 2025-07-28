@@ -1,5 +1,5 @@
 from pyg_base._as_float import as_float
-from pyg_base._as_list import as_list, as_tuple, first, last, passthru, unique, is_rng
+from pyg_base._as_list import as_list, as_tuple, passthru, is_rng
 from pyg_base._as_primitive import as_primitive
 from pyg_base._bitemporal import Bi, bi_merge, bi_read, is_bi, bi_asof
 from pyg_base._cache import cache, cache_func
@@ -34,6 +34,7 @@ from pyg_base._types import is_pd, is_arr, is_int, is_float, is_num, is_bool, is
     is_none, is_dict, is_iterable, is_date, is_df, is_series, is_ts, is_list, is_tuple, is_regex, is_primitive, \
     is_pds, is_arrs, is_ints, is_floats, is_nums, is_len, is_bools, is_strs, is_nans, is_nones, is_dicts, is_zero_len, \
     is_iterables, is_tss, nan2none, null2none, NoneType, is_dates, is_lists, list_instances, is_jsonable
+from pyg_base._unique import first, last, unique
 from pyg_base._ulist import ulist, rng
 from pyg_base._waiter import waiter, async_wrapper
 from pyg_base._xls import pd_to_excel

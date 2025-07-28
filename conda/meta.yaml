@@ -1,6 +1,6 @@
 package:
     name: pyg-base
-    version: 0.0.86
+    version: 0.0.87
 
 source:
     path: ../src

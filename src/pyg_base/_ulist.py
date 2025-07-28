@@ -1,4 +1,5 @@
 from pyg_base._types import is_int, is_list
+from pyg_base._as_list import as_list
 
 __all__ = ['rng', 'ulist']
 
@@ -49,6 +50,9 @@ class ulist(list):
         else:
             return type(self)(super(ulist, self).__add__([other]))
 
+    def __radd__(self, other):
+        return type(self)(as_list(other)).__add__(self)
+
     def copy(self):
         return type(self)(self, unique = True) 
     
@@ -67,4 +71,12 @@ class ulist(list):
             return self.copy()
         else:
             return type(self)([o for o in self if o not in [other]])
+        
+    def __rsub__(self, other):
+        if isinstance(other, list):
+            return type(self)([o for o in other if o not in self])
+        else:
+            return type(self)([o for o in [other] if o not in self])
+
+        
                 

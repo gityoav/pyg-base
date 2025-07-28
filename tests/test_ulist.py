@@ -19,4 +19,13 @@ def test_ulist_add():
     assert ulist([1,2,3]) + 1 == ulist([1,2,3])
     assert ulist([1,2,3]) + [1,2] == ulist([1,2,3])
     assert ulist([1,2,3]).copy() == ulist([1,2,3])    
+    assert 0 + ulist([1,2,3]) == ulist([0,1,2,3])
+    assert [0,3] + ulist([1,2,3]) == ulist([0,3,1,2])
 
+
+
+def test_ulist_sub():
+    assert [0,3] - ulist([1,2,3]) == ulist([0])
+    assert 0 - ulist([1,2,3]) == ulist([0])
+    assert 1 - ulist([1,2,3]) == ulist([])
+    
