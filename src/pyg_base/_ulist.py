@@ -50,9 +50,6 @@ class ulist(list):
         else:
             return type(self)(super(ulist, self).__add__([other]))
 
-    def __radd__(self, other):
-        return type(self)(as_list(other)).__add__(self)
-
     def copy(self):
         return type(self)(self, unique = True) 
     

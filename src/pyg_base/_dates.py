@@ -6,7 +6,7 @@ import re
 import pandas as pd
 import numpy as np
 from dateutil import parser
-# from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta
 from functools import reduce, partial
 import dateutil as du
 from dateutil import tz
@@ -333,6 +333,20 @@ def is_period(bump):
 def is_bump(bump):
     return is_period(bump) or (is_int(bump) and bump<1500) or isinstance(bump, (datetime.timedelta, du.relativedelta.relativedelta))
 
+def negative_bump(bump):
+    """
+    the opposite bump
+    >>> assert negative_bump('1d') == '-1d'
+    >>> assert negative_bump('-2w') == '2w'
+    >>> assert negative_bump(5) == -5
+    >>> assert negative_bump(datetime.timedelta(5)) == datetime.timedelta(-5)
+
+    """
+    if is_period(bump):
+        return bump[1:] if bump.startswith('-') else '-' + bump
+    else:            
+        return -bump
+    
 _bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
 
 def dt_bump(t, *bumps, aggregate = 'last', eom = None):

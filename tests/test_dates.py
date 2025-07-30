@@ -1,5 +1,5 @@
 from pyg_base import dt, dt_bump, drange, dt,dt_bump, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, eq, nth_weekday_of_month
-from pyg_base._dates import none2dt, is_period, ym, month, uk2dt, us2dt, period, is_bump
+from pyg_base._dates import none2dt, is_period, ym, month, uk2dt, us2dt, period, is_bump, negative_bump
 
 import datetime
 import pytest
@@ -48,6 +48,13 @@ def test_dt_bump():
     for bmp in ['1d', '1m', '-3w', '4b', '1h', '2n', '6s']:
         assert dt(bmp) == dt_bump(0, bmp)
         
+
+def test_negative_bump():
+    assert negative_bump('1d') == '-1d'
+    assert negative_bump('-2w') == '2w'
+    assert negative_bump(5) == -5
+    assert negative_bump(datetime.timedelta(5)) == datetime.timedelta(-5)
+
 
 def test_dt_bump_eom():
     t = dt(2022,8,31)
