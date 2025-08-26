@@ -1257,6 +1257,14 @@ class dictable(Dict):
     __truediv__ = xor
     __div__ = xor
     
+    def left_join(self, other, lcols = None, rcols = None, mode = None, **defaults):
+        res = self.join(other, lcols = lcols, rcols = rcols, mode = mode) + self.xor(other, lcos = lcols, rcols = rcols, mode = mode)
+        return res.if_none(**defaults)
+
+    def right_join(self, other, lcols = None, rcols = None, mode = None, **defaults):
+        res = self.join(other, lcols = lcols, rcols = rcols, mode = mode) + dictable(other).xor(self, lcos = rcols, rcols = lcols, mode = mode)
+        return res.if_none(**defaults)
+    
     def xyz(self, x, y, z, agg = None):
         """
         
