@@ -572,3 +572,28 @@ def test_dictable_supports_dict_functions():
     assert rs[f] == [5,7,9]
     rs = rs(c = f)
     assert rs.c == [5,7,9]
+
+
+def test_dictable_left_join():
+    self = dictable(a = [1,2,3])
+    other = dict(a = [1,2], b = [1,2])
+    assert self.left_join(other, lcols = 'a') == dictable(a = [1,2,3], b = [1,2,None])
+    assert self.left_join(other, lcols = 'a', b = 4) == dictable(a = [1,2,3], b = [1,2,4])
+    assert self.left_join(other, lcols = 'a', b = lambda a: a**2) == dictable(a = [1,2,3], b = [1,2,9])
+    other = dict(aa = [1,2], b = [1,2])
+    assert self.left_join(other, 'a', 'aa', b = lambda a: a**2) == dictable(a = [1,2,3], aa = [1,2,None], b = [1,2,9])
+
+def test_dictable_right_join():
+    self = dictable(a = [1,2,3])
+    other = dict(a = [1,2], b = [1,2])
+    assert self.right_join(other, lcols = 'a') == dictable(a = [1,2], b = [1,2])
+    self = dictable(a = [1,2,3], c = [1,2,3])
+    other = dict(a = [1,2,3,4], b = [1,2,3,4])
+    assert self.right_join(other, lcols = 'a') == dictable(a = [1,2,3,4], b = [1,2,3,4], c = [1,2,3,None])
+    assert self.right_join(other, lcols = 'a', c = 0) == dictable(a = [1,2,3,4], b = [1,2,3,4], c = [1,2,3,0])
+    other = dict(aa = [1,2,3,4], b = [1,2,3,4])
+    assert self.right_join(other, 'a', 'aa', c = 0) == dictable(aa = [1,2,3,4], a = [1,2,3,None], b = [1,2,3,4], c = [1,2,3,0])
+
+
+
+
