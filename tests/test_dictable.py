@@ -594,6 +594,14 @@ def test_dictable_right_join():
     other = dict(aa = [1,2,3,4], b = [1,2,3,4])
     assert self.right_join(other, 'a', 'aa', c = 0) == dictable(aa = [1,2,3,4], a = [1,2,3,None], b = [1,2,3,4], c = [1,2,3,0])
 
-
+def test_dictable_right_join_with_mode():
+    self = dictable(a = [1,2,3], b = [10,20,30])
+    other = dict(a = [1,2], b = [1,2], c = [1,2])
+    assert self.left_join(other, 'a', mode = 'l') == dictable(a = [1,2,3], b = [10,20,30], c = [1,2,None])
+    assert self.left_join(other, 'a', mode = 'r') == dictable(a = [1,2,3], b = [1,2,30], c = [1,2,None])
+    self = dictable(a = [1,2,3], b = [10,20,30], d = 1)
+    other = dict(a = [1,2,4], b = [1,2,4], c = [1,2,4])
+    assert self.right_join(other, 'a', mode = 'l') == dictable(a = [1,2,4], b = [10,20,4], c = [1,2,4], d = [1,1,None])
+    assert self.right_join(other, 'a', mode = 'r') == dictable(a = [1,2,4], b = [1,2,4], c = [1,2,4], d = [1,1,None])
 
 
