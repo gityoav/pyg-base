@@ -4,7 +4,7 @@ from pyg_base._as_primitive import as_primitive
 from pyg_base._bitemporal import Bi, bi_merge, bi_read, is_bi, bi_asof
 from pyg_base._cache import cache, cache_func
 from pyg_base._cfg import mkdir, get_cache, cfg_read, cfg_write, CFG
-from pyg_base._dates import iso, dt, uk2dt, us2dt, dt_bump, as_tz, is_tz, tzones, tz_convert, tz_replace, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m
+from pyg_base._dates import iso, dt, uk2dt, us2dt, dt_bump, as_tz, is_tz, tzones, tz_convert, tz_replace, today, ymd, TMIN, TMAX, DAY, futcodes, dt2str, is_bump, nth_weekday_of_month, mmm2m, negative_bump
 from pyg_base._decorators import as_DictArgSpec, kwargs_support, kwpartial, wrapper, try_value, do_if, if_not_none, try_back, try_nan, try_none, try_zero, try_false, try_true, try_list, timer, DictArgSpec
 from pyg_base._dict import Dict, loop_all, loop, items_to_tree, tree_items, tree_keys, tree_values, tree_setitem, tree_getitem, tree_get, tree_update, dict_invert
 from pyg_base._dictattr import dictattr, relabel, getattrs
