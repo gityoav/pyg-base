@@ -240,6 +240,64 @@ class loops(wrapper):
             return self.function(arg, *args, **kwargs)
 
 
+def is_tree_deep(value, depth = 1):
+    """
+    assert is_tree_deep(dict(a = 1), 0)
+    assert is_tree_deep(dict(a = dict(b = 1)), 1)
+    assert is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 1)
+    assert not is_tree_deep(dict(a = 1), 1)
+    assert not is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 2)
+    """
+    if depth == 0:
+        return isinstance(value, dict)
+    else:
+        return isinstance(value, dict) and min([is_tree_deep(v, depth-1) for v in value.values()])
+
+
+class tree_loop(wrapper):
+    """
+    We operate on a function that takes dict as values
+
+    >>> weighted_sum = lambda d, w = {}: sum([d[key]*w.get(key,1) for key in d])
+    >>> assert weighted_sum(dict(x = 1, y = 2)) == 3
+    >>> assert weighted_sum(dict(x = 1, y = 2), w = dict(x = 0.4, y = 0.6)) == 1.6
+    
+    arg = dict(a = dict(x=1, y=1), b = dict(x = 1, y = 2, z = 3), c = dict(u = dict(x = 1, y = 2), v = dict(x = 1, y = 2, z = 3)))
+    w = dict(a = dict(x = 0.1, y = 0.9), b = dict(x = 1, y = 1, z = 2), c = {})
+
+    tree-loop goes down subtrees but stops at the level just BEFORE
+    >>> assert tree_loop(weighted_sum)(arg) == dict(a = 2, b = 6, c = dict(u = 3, v = 6))
+    >>> assert tree_loop(weighted_sum)(arg, w) == dict(a = 1, b = 9, c = dict(u = 3, v = 6))
+    """
+    
+    def __init__(self, function = None, depth = 1, function_fullargspec = None):
+        super(tree_loop, self).__init__(function = function, depth = depth, function_fullargspec = function_fullargspec)
+
+    @property
+    def first(self):
+        args = getargs(self)
+        return args[0] if len(args) else None
+
+    def wrapped(self, *args, **kwargs):
+        top = self.first
+        depth = self.depth
+        if len(args) == 0 and not top in kwargs:
+            return self.function(*args, **kwargs)
+        if len(args):
+            arg, args_, kwargs_ = args[0], args[1:], kwargs
+        else:
+            arg = kwargs.pop(top)
+            args_, kwargs_ = args, kwargs
+        if is_tree_deep(arg, depth = depth):
+            subtrees = {key : value for key, value in arg.items() if is_tree_deep(value, depth)}
+            actual_values = {key: value for key, value in arg.items() if key not in subtrees}            
+            keys = sorted(arg)
+            actual_res = {key: self.function(arg[key], *(_item_by_key(a,key,keys) for a in args_), **{k : _item_by_key(v,key,keys) for k,v in kwargs_.items()}) for key in actual_values}
+            subtree_res = {key: self.wrapped(arg[key], *(_item_by_key(a,key,keys) for a in args_), **{k : _item_by_key(v,key,keys) for k,v in kwargs_.items()}) for key in subtrees}
+            return type(arg)(actual_res|subtree_res)
+        else:
+            return self.function(*args, **kwargs)
+
 
 def _T(arg):
     if isinstance(arg, tuple):
@@ -462,6 +520,10 @@ def _getitem(value, param, strict = False):
             raise ValueError('could not find parameter %s in %s'%(param, value))
         else:
             return value
+
+
+
+
 
 class grab_parameter_from_dict(wrapper):
     """

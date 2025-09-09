@@ -1,4 +1,4 @@
-from pyg_base import loop, eq, drange, Dict, dictattr, pd2np
+from pyg_base import loop, eq, drange, Dict, dictattr, pd2np, tree_loop, is_tree_deep
 import pandas as pd; import numpy as np
 import pytest
 from numpy import array
@@ -255,4 +255,21 @@ def test_pd2np_exc():
     assert pd2np(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
     
 
+def test_tree_loop():
+    weighted_sum = lambda d, w = {}: sum([d[key]*w.get(key,1) for key in d])
+    assert weighted_sum(dict(x = 1, y = 2)) == 3
+    assert weighted_sum(dict(x = 1, y = 2), w = dict(x = 0.4, y = 0.6)) == 1.6
     
+    arg = dict(a = dict(x=1, y=1), b = dict(x = 1, y = 2, z = 3), c = dict(u = dict(x = 1, y = 2), v = dict(x = 1, y = 2, z = 3)))
+    w = dict(a = dict(x = 0.1, y = 0.9), b = dict(x = 1, y = 1, z = 2), c = {})
+
+    assert tree_loop(weighted_sum)(arg) == dict(a = 2, b = 6, c = dict(u = 3, v = 6))
+    assert tree_loop(weighted_sum)(arg, w) == dict(a = 1, b = 9, c = dict(u = 3, v = 6))
+
+
+def test_is_tree_deep():
+    assert is_tree_deep(dict(a = 1), 0)
+    assert is_tree_deep(dict(a = dict(b = 1)), 1)
+    assert is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 1)
+    assert not is_tree_deep(dict(a = 1), 1)
+    assert not is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 2)
