@@ -119,11 +119,11 @@ class dictattr(dict):
     
     def __truediv__(self, other):
         if type(other) == type:
-            return type(self)({key: value for key, value in self.items() if not isinstance(value, other)})                        
+            return type(self)(**{key: value for key, value in self.items() if not isinstance(value, other)})                        
         elif callable(other):
-            return type(self)({key: value for key, value in self.items() if not other(value)})            
+            return type(self)(**{key: value for key, value in self.items() if not other(value)})            
         else:
-            return type(self)({key: value for key, value in self.items() if not eq(value, other)})
+            return type(self)(**{key: value for key, value in self.items() if not eq(value, other)})
     
     def __dir__(self):
         return list(self.keys()) + super(dictattr, self).__dir__()
