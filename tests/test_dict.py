@@ -27,6 +27,19 @@ def test_dict_relabel():
         assert self.relabel(['x', 'y', 'z']) == d(x = 1, y = 2, z = 3)
         assert self.relabel('pre_') == d(pre_a = 1, pre_b = 2, pre_c = 3)
 
+def test_Dict_call_with_relabel():
+    self = Dict(a = 1, b = 2)
+    assert self(y = lambda x: x**2, relabel = dict(b = 'x')) == Dict(a = 1, b = 2, y = 4)
+    assert self.apply(lambda x: x**2, relabel = dict(b = 'x')) == 4
+    assert self.apply(lambda x: x**2, dict(b = 'x')) == 4
+
+    self = dictable(a = [1,2], b = [3,4])
+    assert self(y = lambda x: x**2, relabel = dict(b = 'x')) == self(y = lambda b: b**2)
+    assert self.apply(lambda x: x**2, relabel = dict(b = 'x')) == self.apply(lambda b: b**2)
+    assert self.apply(lambda x: x**2, dict(b = 'x')) == self.apply(lambda b: b**2)
+    
+    
+
 def test_dict_tree_getitem():
     for tp in [Dict, dictattr]:
         d = tp(a = 1, b = tp(c = 2, d = 3, e = tp(f = 4, g = 5)))

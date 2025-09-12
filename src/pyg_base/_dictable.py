@@ -683,11 +683,11 @@ class dictable(Dict):
         return res
 
     
-    def apply(self, function, **default_params):
+    def apply(self, function, relabel = None, **default_params):
         f = kwargs_support(function)
         if isinstance(function, dict):
             default_params = dict(function) | default_params
-        return [f(**_dict_in_place_update(default_params,row)) for row in self] ## we update in place since all rows share same keys
+        return [f(**_dict_in_place_update(default_params,row)) for row in self.relabel(relabel)] ## we update in place since all rows share same keys
 
 
     def do(self, function, *keys):

@@ -65,18 +65,19 @@ class Dict(dictattr):
         else:
             return super(Dict, self).__getitem__(value)
     
-    def apply(self, function, **default_params):
+    def apply(self, function, relabel = None, **default_params):
         """
         we allow default params but internal values will trump them
         """
-        default_params.update(self)
-        return kwargs_support(function)(**default_params) if callable(function) else self[function]
+        me = self.relabel(relabel or None)
+        default_params.update(me)
+        return kwargs_support(function)(**default_params) if callable(function) else me[function]
     
     
     def copy(self):
         return copy(self)
 
-    def __call__(self, **kwargs):
+    def __call__(self, relabel = None, **kwargs):
         res = self.copy()
         res.update({key : value for key, value in kwargs.items() if not callable(value)})
         callables = {key: value for key, value in kwargs.items() if callable(value)}
@@ -87,10 +88,10 @@ class Dict(dictattr):
                 raise ValueError('circular function calling')
             else:
                 for key, value in independent.items():
-                    res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
+                    res[key] = self._postprocess(key, res.apply(value, relabel = relabel, **{self._key : key}))
                 callables = {key: value for key, value in callables.items() if not key in independent}
         for key, value in callables.items():
-            res[key] = self._postprocess(key, res.apply(value, **{self._key : key}))
+            res[key] = self._postprocess(key, res.apply(value, relabel = relabel, **{self._key : key}))
         return res
     
     def __add__(self, other):
