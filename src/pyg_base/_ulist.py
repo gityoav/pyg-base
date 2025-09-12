@@ -1,5 +1,6 @@
 from pyg_base._types import is_int, is_list
 from pyg_base._as_list import as_list
+from pyg_base._eq import eq
 
 __all__ = ['rng', 'ulist']
 
@@ -74,6 +75,15 @@ class ulist(list):
             return type(self)([o for o in other if o not in self])
         else:
             return type(self)([o for o in [other] if o not in self])
+        
+    def __truediv__(self, other):
+        if type(other) == type or (isinstance(other, tuple) and min([type(o) == type for o in other])):
+            return type(self)([value for value in self if not isinstance(value, other)])                        
+        elif callable(other):
+            return type(self)([value for value in self  if not other(value)])            
+        else:
+            return type(self)([value for value in self if not eq(value, other)])
+
 
         
                 

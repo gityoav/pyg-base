@@ -27,3 +27,10 @@ def test_ulist_sub():
     assert 0 - ulist([1,2,3]) == ulist([0])
     assert 1 - ulist([1,2,3]) == ulist([])
     
+    
+def test_ulist__truediv__():
+    d = ulist([1,2,3.4,None])
+    assert d/None == ulist([1,2,3.4])
+    assert d/int == ulist([3.4,None])
+    assert d/(int, float) == ulist([None])
+    assert d/(lambda x: x is None or x>3) == ulist([1,2])

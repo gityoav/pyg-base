@@ -118,7 +118,7 @@ class dictattr(dict):
         return res
     
     def __truediv__(self, other):
-        if type(other) == type:
+        if type(other) == type or (isinstance(other, tuple) and min([type(o) == type for o in other])):
             return type(self)(**{key: value for key, value in self.items() if not isinstance(value, other)})                        
         elif callable(other):
             return type(self)(**{key: value for key, value in self.items() if not other(value)})            

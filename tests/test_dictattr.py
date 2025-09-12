@@ -22,6 +22,15 @@ def test_dictattr__and__():
     assert d & ('a', 'b') == dictattr(a = 1, b = 2)
     assert d & 'a' == dictattr(a = 1)
     assert d & ('a', 'b','other') == dictattr(a = 1, b = 2)
+
+
+def test_dictattr__truediv__():
+    d = dictattr(a = 1, b = 2, c = 3.4, d = None)
+    assert d/None == dictattr(a = 1, b = 2, c = 3.4)
+    assert d/int == dictattr(c = 3.4, d = None)
+    assert d/(int, float) == dictattr(d = None)
+    assert d/(lambda x: x is None or x>3) == dictattr(a = 1, b = 2)
+
     
 
 def test_dictattr_delete_fail():

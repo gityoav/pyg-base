@@ -4,4 +4,4 @@ import platform
 from setuptools import setup, find_packages
 from distutils.core import Extension
 
-setup(name = 'pyg-base', version = '0.0.94', packages = find_packages(), python_requires = '>=3.6.')
+setup(name = 'pyg-base', version = '0.0.95', packages = find_packages(), python_requires = '>=3.6.')
