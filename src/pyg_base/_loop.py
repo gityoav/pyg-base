@@ -50,17 +50,17 @@ def _item_by_key(value, key, keys, i = None):
     i = None
     assert _item_by_key(value, key, keys, i)
     """
-    skeys = set(keys); n = len(skeys)
+    skeys = sorted(keys)
     if isinstance(value, dict):
-        if len(set(value.keys()) & skeys) == n:
+        if sorted(value.keys()) == skeys:
             return value[key]
         else:
             return type(value)({k : _item_by_key(v, key, keys, i) for k, v in value.items()})
-    elif isinstance(value, pd.Series) and len(set(value.index.values) & skeys) == n:
+    elif isinstance(value, pd.Series) and sorted(value.index.values) == skeys:
         return value[key] 
-    elif isinstance(value, pd.DataFrame) and len(set(value.columns) & skeys) == n:
+    elif isinstance(value, pd.DataFrame) and sorted(value.columns) == skeys:
         return value[key]
-    elif isinstance(value, pd.DataFrame) and len(set(value.index) & skeys) == n:
+    elif isinstance(value, pd.DataFrame) and sorted(value.index) == skeys:
         return value.loc[key]
     elif is_array(value) and len(value.shape):
         if len(value.shape) == 2 and value.shape[1] == len(keys) and i is not None:

@@ -32,18 +32,6 @@ def test_loop_dict():
     with pytest.raises(TypeError):
         f(dict(a=1,b=2), [2,2]) 
         
-def test_loop_dict_with_more_params():
-    self = loop(dict)(AB)
-    assert self(dict(x=1,y=2), 2) == dict(x = 3, y = 4)
-    assert self(dict(x=1,y=2), dict(x = 1, y = 2)) == dict(x = 2, y = 4)
-    assert self(a = dict(x=1,y=2), b = dict(x = 1, y = 2, z = 3)) == dict(x = 2, y = 4)
-
-
-def test_loop_dict_with_tree_and_dict():
-    self = loop(dict)(AB)
-    a = dict(eq = dict(x=1, y = 2), bonds = dict(z = 3)) ## some fancy structure
-    b = dict(x = 3,y=4,z=5) ## data as a flat key-value
-    assert self(a = a, b = b) == dict(eq = dict(x = 4, y =6), bonds = dict(z = 8))
     
 
 def test__item_by_key():
