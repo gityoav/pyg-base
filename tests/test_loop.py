@@ -1,4 +1,4 @@
-from pyg_base import loop, eq, drange, Dict, dictattr, pd2np, tree_loop, is_tree_deep
+from pyg_base import loop, eq, drange, Dict, dictattr, pd2np, tree_loop, is_tree_deep, _item_by_key
 import pandas as pd; import numpy as np
 import pytest
 from numpy import array
@@ -30,6 +30,24 @@ def test_loop_dict():
         f(dict(a=1,b=2), dict(a=2, b=3, c=6))
     with pytest.raises(TypeError):
         f(dict(a=1,b=2), [2,2]) 
+        
+def test_loop_dict_with_more_params():
+    self = loop(dict)(AB)
+    assert self(dict(x=1,y=2), 2) == dict(x = 3, y = 4)
+    assert self(dict(x=1,y=2), dict(x = 1, y = 2)) == dict(x = 2, y = 4)
+    assert self(a = dict(x=1,y=2), b = dict(x = 1, y = 2, z = 3)) == dict(x = 2, y = 4)
+
+
+def test__item_by_key():
+    value = dict(x = 1, y = 2, z = 3)
+    key = 'x'
+    keys = ['x', 'y']
+    i = None
+    assert _item_by_key(value, key, keys, i) == 1
+    assert _item_by_key(pd.Series(value), key, keys, i) == 1
+    assert list(_item_by_key(pd.DataFrame([value]), key, keys, i).values) == [1]
+    assert list(_item_by_key(pd.DataFrame(pd.Series(value)), key, keys, i).values) == [1]
+    
 
 def test_loop_just_dicts():
     f = loop(dict)(AB)

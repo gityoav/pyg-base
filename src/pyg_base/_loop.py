@@ -43,16 +43,24 @@ def shape(value):
  
 
 def _item_by_key(value, key, keys, i = None):
+    """
+    value = dict(x = 1, y = 2, z = 3)
+    key = 'x'
+    keys = ['x', 'y']
+    i = None
+    assert _item_by_key(value, key, keys, i)
+    """
+    skeys = set(keys); n = len(skeys)
     if isinstance(value, dict):
-        if sorted(value.keys()) == keys:
+        if len(set(value.keys()) & skeys) == n:
             return value[key]
         else:
             return type(value)({k : _item_by_key(v, key, keys, i) for k, v in value.items()})
-    elif isinstance(value, pd.Series) and sorted(value.index.values) == keys:
+    elif isinstance(value, pd.Series) and len(set(value.index.values) & skeys) == n:
         return value[key] 
-    elif isinstance(value, pd.DataFrame) and sorted(value.columns) == sorted(keys):
+    elif isinstance(value, pd.DataFrame) and len(set(value.columns) & skeys) == n:
         return value[key]
-    elif isinstance(value, pd.DataFrame) and sorted(value.index) == sorted(keys):
+    elif isinstance(value, pd.DataFrame) and len(set(value.index) & skeys) == n:
         return value.loc[key]
     elif is_array(value) and len(value.shape):
         if len(value.shape) == 2 and value.shape[1] == len(keys) and i is not None:
@@ -207,6 +215,7 @@ class loops(wrapper):
         axis = kwargs.pop('axis', 0)
         if isinstance(arg, dict) and type(arg) in self.types:
             keys = sorted(arg.keys())
+            
             res = {key : self._wrapped(arg[key], (_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
             return type(arg)(res)
         elif isinstance(arg, pd.DataFrame) and pd.DataFrame in self.types:
