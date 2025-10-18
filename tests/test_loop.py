@@ -1,4 +1,4 @@
-from pyg_base import loop, eq, drange, Dict, dictattr, pd2np, tree_loop, is_tree_deep
+from pyg_base import loop, eq, drange, Dict, dictattr, pd2np, tree_loop, is_tree_deep, loop_last_axis, loop_and_reduce_last_axis
 from pyg_base._loop import _item_by_key
 import pandas as pd; import numpy as np
 import pytest
@@ -287,3 +287,17 @@ def test_is_tree_deep():
     assert is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 1)
     assert not is_tree_deep(dict(a = 1), 1)
     assert not is_tree_deep(dict(a = dict(b = 1), c = dict(x = 1, y = 2)), 2)
+
+
+def test_loop_last_axis():
+    a = np.random.normal(0,1,(10,20,30))
+    b = loop_and_reduce_last_axis(lambda a: len(a))(a)
+    assert b.shape == a.shape[:2]
+    assert b[0][0] == 30
+    f = loop_and_reduce_last_axis(lambda a: np.mean(a))
+    b = f(a)
+    assert eq(b, np.mean(a, axis=-1))
+    f = loop_and_reduce_last_axis(lambda *a: len(a))
+    assert eq(f(a,1), f(a, a))
+    f = loop_last_axis(lambda a ,b : a + b)
+    assert eq(f(a,a), a+a)

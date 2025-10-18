@@ -181,7 +181,7 @@ def axis0_to_array(res, arg):
     return rtn
 
 
-class loop_last_exis(wrapper):
+class loop_last_axis(wrapper):
     # we have a 2d/3d object where the LAST axis is a timeseries
     # we will be doing a calculation and keeping a history
     
