@@ -1,6 +1,6 @@
 import pandas as pd; import numpy as np
 from pyg_base._inspect import getargs, getcallarg, getcallargs, getargspec, call_with_callargs
-from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_arr, is_array, is_tuple, is_dict
+from pyg_base._types import is_ts, is_str, is_df, is_pd, is_series, is_arr, is_tuple, is_dict
 from pyg_base._decorators import wrapper
 from pyg_base._as_list import as_tuple, as_list
 
@@ -62,7 +62,7 @@ def _item_by_key(value, key, keys, i = None):
         return value[key]
     elif isinstance(value, pd.DataFrame) and sorted(value.index) == skeys:
         return value.loc[key]
-    elif is_array(value) and len(value.shape):
+    elif is_arr(value) and len(value.shape):
         if len(value.shape) == 2 and value.shape[1] == len(keys) and i is not None:
             return value.T[i]
         elif len(value.shape) == 1 and value.shape[0] == len(keys) and i is not None:
@@ -75,17 +75,61 @@ def _item_by_key(value, key, keys, i = None):
         else:
             return value
 
+
+def _last_axis_by_i_and_j(value, i, j, n0, n1, history):
+    if isinstance(value, dict):
+        return type(value)({k : _last_axis_by_i_and_j(v, i, j, n0, n1, history) for k, v in value.items()})
+    elif isinstance(value, (list,tuple)):
+        return type(value)([_last_axis_by_i_and_j(v, i, j, n0, n1, history) for v in value])
+    elif is_arr(value):
+        shape = value.shape
+        if len(shape) == 3:
+            return value[i,j]
+        elif len(shape) == 2:
+            if shape == (n0, n1):
+                return value[i,j]
+            elif shape == (n0, history):
+                return value[i]
+            elif shape == (n1, history):
+                return value[j]
+            else:
+                return value
+        elif len(shape) == 1:
+            if shape[0] == n0:
+                return value[i]
+            elif shape[0] == n1:
+                return value[j]
+            else:
+                return value
+    else:
+        return value
+
+def _last_axis_by_i(value, i, n0, history):
+    if isinstance(value, dict):
+        return type(value)({k : _last_axis_by_i(v, i, n0, history) for k, v in value.items()})
+    elif isinstance(value, (list,tuple)):
+        return type(value)([_last_axis_by_i(v, i, n0, history) for v in value])
+    elif is_arr(value):
+        shape = value.shape
+        if shape[0] == n0:
+            return value[i]
+        else:
+            return value
+    else:
+        return value
+        
+    
 def _item_by_i(value, i, n):
     if is_df(value) and value.shape[1] == 1:
         value = value.iloc[:,0]
-    elif is_array(value) and len(value.shape) == 2 and value.shape[1] == 1:
+    elif is_arr(value) and len(value.shape) == 2 and value.shape[1] == 1:
         value = value.T[0]
     if isinstance(value, (list, tuple)):
         if len(value) == n:
             return value[i]
         else:
             return type(value)([_item_by_i(v, i, n) for v in value])
-    elif is_array(value):
+    elif is_arr(value):
         if len(value.shape) == 2 and value.shape[-1] == n:
             return value.T[i]
         if len(value.shape) == 1 and value.shape[-1] == n:
@@ -135,6 +179,78 @@ def axis0_to_array(res, arg):
     if len(rtn.shape)>1:
         rtn = rtn.T
     return rtn
+
+
+class loop_last_exis(wrapper):
+    # we have a 2d/3d object where the LAST axis is a timeseries
+    # we will be doing a calculation and keeping a history
+    
+    def wrapped(self, *args, **kwargs):
+        self_args = getargs(self)
+        top = self_args[0] if len(self_args) else None
+        if len(args) == 0 and not top in kwargs:
+            return self.function(*args, **kwargs)
+        elif len(args):
+            arg = args[0]
+        else:
+            arg = kwargs.get(top)
+        if isinstance(arg, (np.ndarray, pd.DataFrame)) and len(arg.shape)>1:
+            shape = arg.shape
+            args_ = [a.values if is_pd(a) else a for a in args]
+            kwargs_ = {k : a.values if is_pd(a) else a for k,a in kwargs.items()}            
+            res = np.full(shape, np.nan)
+            if len(shape) == 3:
+                for i in range(shape[0]):
+                    for j in range(shape[1]):
+                        a_ = [_last_axis_by_i_and_j(a, i, j, *shape) for a in args_]
+                        k_ = {k : _last_axis_by_i_and_j(a, i, j, *shape) for k,a in kwargs_.items()}
+                        res[i,j] = self.function(*a_, **k_)
+                return res
+            elif len(shape) == 2:
+                for i in range(shape[0]):
+                    a_ = [_last_axis_by_i(a, i, *shape) for a in args_]
+                    k_ = {k : _last_axis_by_i(a, i, *shape) for k,a in kwargs_.items()}
+                    res[i] = self.function(*a_, **k_)                
+                return pd.DataFrame(res, index = arg.index) if isinstance(arg, pd.DataFrame) else res
+        else:
+            return self.function(*args, **kwargs)
+
+
+class loop_and_reduce_last_axis(wrapper):
+    # we have a 2d/3d object where the LAST axis is a timeseries
+    # we will be doing a calculation using the function and projecting it to a single value
+    
+    def wrapped(self, *args, **kwargs):
+        self_args = getargs(self)
+        top = self_args[0] if len(self_args) else None
+        if len(args) == 0 and not top in kwargs:
+            return self.function(*args, **kwargs)
+        elif len(args):
+            arg = args[0]
+        else:
+            arg = kwargs.get(top)
+        if isinstance(arg, (np.ndarray, pd.DataFrame)) and len(arg.shape)>1:
+            shape = arg.shape
+            args_ = [a.values if is_pd(a) else a for a in args]
+            kwargs_ = {k : a.values if is_pd(a) else a for k,a in kwargs.items()}            
+            res = np.full(shape[:-1], np.nan)
+            if len(shape) == 3:
+                for i in range(shape[0]):
+                    for j in range(shape[1]):
+                        a_ = [_last_axis_by_i_and_j(a, i, j, *shape) for a in args_]
+                        k_ = {k : _last_axis_by_i_and_j(a, i, j, *shape) for k,a in kwargs_.items()}
+                        res[i,j] = self.function(*a_, **k_)
+                return pd.DataFrame(res, index = arg.index) if isinstance(arg, pd.DataFrame) else res
+            elif len(shape) == 2:
+                for i in range(shape[0]):
+                    a_ = [_last_axis_by_i(a, i, *shape) for a in args_]
+                    k_ = {k : _last_axis_by_i(a, i, *shape) for k,a in kwargs_.items()}
+                    res[i] = self.function(*a_, **k_)                
+                return pd.Series(res, index = arg.index) if isinstance(arg, pd.Series) else res
+        else:
+            return self.function(*args, **kwargs)
+
+
 
 class loops(wrapper):
 
@@ -214,8 +330,7 @@ class loops(wrapper):
     def _wrapped(self, arg, args, kwargs):
         axis = kwargs.pop('axis', 0)
         if isinstance(arg, dict) and type(arg) in self.types:
-            keys = sorted(arg.keys())
-            
+            keys = sorted(arg.keys()) 
             res = {key : self._wrapped(arg[key], (_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
             return type(arg)(res)
         elif isinstance(arg, pd.DataFrame) and pd.DataFrame in self.types:
@@ -325,7 +440,7 @@ def _int2float(a):
         return type(a)([_int2float(v) for v in a])
     elif isinstance(a, dict):
         return type(a)({k : _int2float(v) for k,v in a.items()})
-    if (is_series(a) or is_array(a)) and a.dtype in _dtype_ints:
+    if (is_series(a) or is_arr(a)) and a.dtype in _dtype_ints:
         return a.astype(float)
     if is_df(a):
         if hasattr(a, 'dtype'):
