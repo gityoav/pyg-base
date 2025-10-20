@@ -181,7 +181,7 @@ def df_roll_off(chain, loader, load_on = None,transform = None, live_check = Non
         data_cutoff = None
 
     if data_ok:
-        old_data = data
+        old_data = as_series(data)
         old_chain = chain[[row[roll] is not None and row[roll]<data_cutoff for row in chain]]
         chain = chain[[row[roll] is None or row[roll]>=data_cutoff for row in chain]]
     else:
@@ -221,6 +221,7 @@ def df_roll_off(chain, loader, load_on = None,transform = None, live_check = Non
     if j < size:
         loaded_data.extend([None] * (size - j))
     chain[_data] = loaded_data
+    chain = chain.do(as_series, _data)
 
     ## we now determine missing rolling dates
     expiry = dt(expiry)
@@ -243,7 +244,7 @@ def df_roll_off(chain, loader, load_on = None,transform = None, live_check = Non
     ub = [_min(row[roll], row[_data].index[-1]) for row in c]
     if transform is not None:
         c = c.do(transform, _data)
-    new_data = df_slice(c[_data], ub = ub, openclose = '(]', n = n_)
+    new_data = as_series(df_slice(c[_data], ub = ub, openclose = '(]', n = n_))
     if n == 0:
         new_data = as_series(new_data)
     if old_data is not None and len(old_data) > 0:
