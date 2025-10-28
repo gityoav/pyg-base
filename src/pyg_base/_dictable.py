@@ -340,8 +340,13 @@ class dictable(Dict):
     """
     def __init__(self, data = None, columns = None, **kwargs):
         kwargs = {key :_value(value) for key, value in kwargs.items()}
-        data_kwargs = {key: _value(value) for key, value in _data_columns_as_dict(data, columns).items()}
-        kwargs.update(data_kwargs)
+        n = lens(*kwargs.values())
+        if columns is None and isinstance(data, list) and len(data) == n:
+            kwargs['data'] = data
+            data = None
+        else:
+            data_kwargs = {key: _value(value) for key, value in _data_columns_as_dict(data, columns).items()}
+            kwargs.update(data_kwargs)
         if is_strs(columns) and (len(data_kwargs) == 0 or not is_str(columns)):
             kwargs = {key : kwargs.get(key, [None]) for key in columns} if len(kwargs)>0 else {key : [] for key in columns}
         n = lens(*kwargs.values())

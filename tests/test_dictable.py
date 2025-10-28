@@ -32,6 +32,7 @@ def test_dictable_init():
     assert dict(dictable(pd.DataFrame(dict(a=[1,2], b= 3)))) == {'a': [1, 2], 'b': [3, 3]}
     assert dict(dictable(pd.DataFrame(dict(a=[1,2], b= 3)).set_index('a'))) == {'a': [1, 2], 'b': [3, 3]}
     assert dict(dictable([['a', 'b'], [1,2], [3,4]])) == dict(a = [1,3], b = [2,4])
+    assert dict(dictable(data = [dict(a=1),dict(a=2),dict(a=3)], b = 1, c = [1,2,3])) == {'b': [1, 1, 1], 'c': [1, 2, 3], 'data': [{'a': 1}, {'a': 2}, {'a': 3}]}
     
     z = dict(a = [1,2,3,4,], b = [4,5,6,7])
     assert dictable(zip(*z.values()), z.keys()) == dictable(z)
