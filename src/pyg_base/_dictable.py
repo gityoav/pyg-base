@@ -341,7 +341,7 @@ class dictable(Dict):
     def __init__(self, data = None, columns = None, **kwargs):
         kwargs = {key :_value(value) for key, value in kwargs.items()}
         n = lens(*kwargs.values())
-        if columns is None and isinstance(data, list) and len(data) == n:
+        if columns is None and isinstance(data, list) and len(kwargs) and len(data) == n:
             kwargs['data'] = data
             data = None
         else:
