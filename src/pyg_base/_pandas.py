@@ -103,13 +103,13 @@ def abs_(a):
 def _df_index(indexes, index):
     if len(indexes) > 0:
         if is_str(index):
-            if index[0].lower() == 'i':#nner
+            if index[0].lower() == 'i':#inner
                 return reducing('intersection')(indexes)        
-            elif index[0].lower() == 'o':#uter
+            elif index[0].lower() == 'o':#outer
                 return reducing('union')(indexes)        
-            elif index[0].lower() == 'l':#uter
+            elif index[0].lower() == 'l':#left join
                 return indexes[0]
-            elif index[0].lower() == 'r':#uter
+            elif index[0].lower() == 'r':#right join
                 return indexes[-1]
         else:
             return _index(index)
@@ -568,6 +568,9 @@ def as_series(df, col = None, unique_column = False):
         else:
             return df
 
+
+_joins = {None: 'outer', 'ij' : 'inner', 'oj' : 'outer', 'i': 'inner', 'o': 'outer'}
+
 def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, limit = None):
     """
     simple concatenator, 
@@ -631,6 +634,7 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
     >>> assert is_series(df_concat([p,pq], axis = 0)) ## multiple columns, handled as series
 
     """
+    join = _joins.get(join, join)
     if isinstance(objs, dict):
         columns = list(objs.keys())
         objs = list(objs.values())
