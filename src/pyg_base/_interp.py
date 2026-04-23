@@ -142,6 +142,8 @@ def interpolate(a, y, x = None,
         x = y.columns.values
     elif isinstance(x, list):
         x = np.array(x)
+    if isinstance(y, list):
+        y = np.array(y)        
     if is_date(a) and is_ts(y):
         a = years_to_maturity(a, y)
     if isinstance(a, list):

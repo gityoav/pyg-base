@@ -1,9 +1,27 @@
 import pandas as pd
 import numpy as np
 import datetime
-from pyg_base import shape, df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex, min_, max_
+from pyg_base import eq, shape, df_slice, drange, dt, dt_bump, dt2str, eq, dictable, df_unslice, nona, df_sync, Dict, add_, div_, mul_, sub_, pow_, df_fillna, df_reindex, min_, max_, df_concat
 from operator import add, itruediv, sub, mul, pow
 from pyg_base._pandas import _align_columns
+import pandas as pd
+import numpy as np
+
+def test_df_concat():
+    a = pd.Series([1,2,3,], drange(2))
+    b = pd.Series([4,5,6], drange(-1,1))
+    res = df_concat(dict(a = a, b=b))
+    assert eq(res, pd.DataFrame(dict(a = [np.nan, 1,2,3], b = [4,5,6, np.nan]), index = drange(-1,2)))
+    for join in [None, 'o', 'oj', 'outer']:
+        assert eq(res, df_concat(dict(a = a, b = b), join = join))
+    i = df_concat(objs = dict(a = a, b=b), join = 'inner')
+    assert eq(i, pd.DataFrame(dict(a = [1,2], b = [5,6]), index = drange(1)))
+    for join in ['i', 'ij', 'inner']:
+        assert eq(i, df_concat(dict(a = a, b = b), join = join))
+    c = 5
+    res = df_concat(dict(a = a, b=b, c = c))
+    assert eq(res, pd.DataFrame(dict(a = [np.nan, 1,2,3], b = [4,5,6, np.nan], c = 5), index = drange(-1,2)))
+    
 
 def test_df_slice():
     df = pd.Series(np.random.normal(0,1,1000), drange(-999, 2000))
