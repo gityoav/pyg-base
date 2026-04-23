@@ -45,3 +45,10 @@ def test_dictattr__dict__():
     d = dictattr(a = 1, b = 2, c = 3)
     assert dict(d) == dict(a = 1, b = 2, c = 3)
     assert d.__dict__() == dict(a = 1, b = 2, c = 3)
+
+
+def test_dictattr__mod__():
+    d = dictattr(hello = 1, world = 2, peace = 3)
+    assert d % 'o' == dictattr(hello = 1, world = 2)
+    assert d % 'wo' == dictattr(world = 2)
+

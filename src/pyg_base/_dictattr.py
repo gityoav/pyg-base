@@ -97,6 +97,10 @@ class dictattr(dict):
         other = set(as_list(other))
         return type(self)(**{key : value for key, value in self.items() if key in set(self.keys()) & other}) 
 
+    def __mod__(self, other):
+        return type(self)({k : v for k, v in self.items() if other in k})
+
+
     def __add__(self, other):
         """
         dictattr uses add as a copy + update. Similar to the latest python |=        

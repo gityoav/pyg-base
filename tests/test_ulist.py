@@ -34,3 +34,9 @@ def test_ulist__truediv__():
     assert d/int == ulist([3.4,None])
     assert d/(int, float) == ulist([None])
     assert d/(lambda x: x is None or x>3) == ulist([1,2])
+    
+def test_ulist__mod__():
+    d = ulist(['hello', 'world', 5])
+    assert d % 'e' == ['hello']
+    assert d % 'o' == ['hello', 'world']
+    

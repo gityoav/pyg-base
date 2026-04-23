@@ -83,6 +83,16 @@ class ulist(list):
             return type(self)([value for value in self  if not other(value)])            
         else:
             return type(self)([value for value in self if not eq(value, other)])
+    
+    def __mod__(self, other):
+        """
+        implements a super-simple filter searching for a string inside a list of strings
+        """
+        if isinstance(other, str):
+            return type(self)([v for v in self if isinstance(v, str) and other in v])
+        else:
+            return type(self)([v % other for v in self])
+
 
 
         
