@@ -1029,7 +1029,7 @@ class dictable(Dict):
             return self.unlist()
         def _unlist_row(row):
             res = type(self)(row[by]) 
-            return row if len(res) == 1 else res | dictable([row[non_by]] * len(res))
+            return res | dictable([row[non_by]] * len(res))
         return self.concat([_unlist_row(row) for row in self])[self.columns]        
         
         
