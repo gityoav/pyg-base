@@ -968,7 +968,7 @@ class dictable(Dict):
                 res = res-col
         return res
     
-    def unlist(self):
+    def unlist(self, *by):
         """
         undoes listby...
         
@@ -984,14 +984,57 @@ class dictable(Dict):
         
         
         >>> assert x.listby('b').unlist().sort('a') == x
+        
+        
+        :Example: partial unlist
+        -----------------------
+        >>> row = dict(a = [1,2,3], b = 4, c = [1,2])
+        >>> another = dict(a = [4,5,6], b = 8, c = [1,2,3,4])
+        >>> self = dictable([row, another])
 
+        dictable[2 x 3]
+        a        |b|c           
+        [1, 2, 3]|4|[1, 2]      
+        [4, 5, 6]|8|[1, 2, 3, 4]
+
+        >>> self.unlist('a')
+        dictable[6 x 3]
+        a|b|c           
+        1|4|[1, 2]      
+        2|4|[1, 2]      
+        3|4|[1, 2]      
+        4|8|[1, 2, 3, 4]
+        5|8|[1, 2, 3, 4]
+        6|8|[1, 2, 3, 4]
+
+        >>> assert self.unlist('a') == self.unlist('a', 'b')
+        >>> assert self.unlist('a') == self.unlist(['a', 'b'])
+
+        
+        >>> self.unlist() ## fails on multiple lengths
+        
         :Returns:
         -------
         dictable
-            a dictable where all rows with list in them have been 'expanded'.
+            a dictable where all rows with list in them have been 'expanf sort(d'.
 
         """
-        return self.concat([row for row in self]) if len(self) else self
+        if len(self) == 0:
+            return self
+        if len(by) == 0:
+            return self.concat([row for row in self]) if len(self) else self
+        by = as_list(by)
+        non_by = self.columns - by
+        if len(non_by) == 0:
+            return self.unlist()
+        def _unlist_row(row):
+            res = type(self)(row[by]) 
+            return row if len(res) == 1 else res | dictable([row[non_by]] * len(res))
+        return self.concat([_unlist_row(row) for row in self])[self.columns]        
+        
+        
+        
+        
     
     def groupby(self,*by, grp = 'grp'):
         """

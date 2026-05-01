@@ -607,3 +607,16 @@ def test_dictable_right_join_with_mode():
     assert self.right_join(other, 'a', mode = 'r') == dictable(a = [1,2,4], b = [1,2,4], c = [1,2,4], d = [1,1,None])
 
 
+def test_unlist_partial():
+    row = dict(a = [1,2,3], b = 4, c = [1,2])
+    another = dict(a = [4,5,6], b = 8, c = [1,2,3,4])
+    rs = dictable([row, another])
+
+    res = rs.unlist('a')
+    assert len(res) == 6
+    assert res.columns == rs.columns
+    assert res[0].c == [1,2]
+    assert res[-1].c == [1,2,3,4]
+
+    assert rs.unlist('a') == rs.unlist('a', 'b')
+    assert rs.unlist('a') == rs.unlist(['a', 'b'])
