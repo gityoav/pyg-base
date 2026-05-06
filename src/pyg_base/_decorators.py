@@ -1,6 +1,6 @@
 import numpy as np
 from pyg_base._logger import logger
-from pyg_base._inspect import getargspec, getargs, argspec_add, getcallarg
+from pyg_base._inspect import getargspec, getargs, argspec_add, getcallarg, argspec_to_args
 from pyg_base._dictattr import dictattr
 from pyg_base._as_list import as_list
 from pyg_base._types import NoneType
@@ -377,14 +377,14 @@ class kwargs_support(wrapper):
     def __init__(self, function = None, function_fullargspec = None):
         super(kwargs_support, self).__init__(function = function, function_fullargspec = function_fullargspec)
     
-    @property
-    def _args(self):
-        return getargs(self.function)
         
     def wrapped(self, *args, **kwargs):
-        _args = self._args
-        kwargs = {key : value for key, value in kwargs.items() if key in _args}
-        return self.function(*args, **kwargs)
+        argspec = getargspec(self.function)
+        _args = argspec_to_args(argspec)
+        kwargs_ = {key : value for key, value in kwargs.items() if key in _args}
+        if argspec.varkw and argspec.varkw in kwargs:
+            kwargs_ = kwargs_ | kwargs[argspec.varkw]
+        return self.function(*args, **kwargs_)
  
 
 class kwpartial(wrapper):

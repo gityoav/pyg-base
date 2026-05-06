@@ -155,3 +155,14 @@ def test_dict_apply():
     assert Dict(a = 1, b = 2).if_else(lambda a, b: a<b, 'a', 'b') == 1
     assert Dict(a = 2, b = 1).if_else(lambda a, b: a<b, 'a', 'b') == 1
     assert Dict(a = 1, b = 2).if_else(lambda a, b: a<b, lambda a,b: b-a, lambda a,b: a-b) == 1
+
+
+def test_dict_works_with_kwargs():
+    f = lambda a, **kwargs: a+len(kwargs)
+    d = Dict(a = 1, kwargs = dict(x = 1, y = 2))
+    assert d[f] == 3
+    assert d.apply(f) == 3
+    f = lambda **kwargs: sum(kwargs.values()) 
+    assert d[f] == 3
+    assert d.apply(f) == 3
+    

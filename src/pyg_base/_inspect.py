@@ -78,6 +78,13 @@ def argspec_add(fullargspec, **update):
                             annotations = fullargspec.annotations)
     return res
 
+def argspec_to_args(argspec, n = 0):
+    if argspec.varargs or n == 0:
+        return argspec.args + argspec.kwonlyargs
+    else:
+        return (argspec.args + argspec.kwonlyargs)[n:]
+    
+
 def getargs(function, n = 0):
     """
 
@@ -96,10 +103,7 @@ def getargs(function, n = 0):
     """
     try:
         argspec = getargspec(function)
-        if argspec.varargs or n == 0:
-            return argspec.args + argspec.kwonlyargs
-        else:
-            return (argspec.args + argspec.kwonlyargs)[n:]
+        return argspec_to_args(argspec, n = n)
     except Exception:
         return []
     
