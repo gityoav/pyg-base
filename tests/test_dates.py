@@ -15,6 +15,9 @@ def test_period():
     assert is_bump('-2d4n')
     assert not is_bump('d')
     assert not is_bump('now')
+    assert dt('spot') == dt('0b')
+    assert dt('t/n') == dt('2b')
+
 
 def test_ukdt():
     assert dt('03/04/95') == dt(1995, 4, 3)
@@ -50,6 +53,8 @@ def test_dt_bump():
         
 
 def test_negative_bump():
+    assert negative_bump('s/n') == '-3b'
+    assert negative_bump('t/n') == '-2b'
     assert negative_bump('1d') == '-1d'
     assert negative_bump('-2w') == '2w'
     assert negative_bump(5) == -5

@@ -327,8 +327,10 @@ def none2dt(none = datetime.datetime.now):
     else:
         return none
 
+_bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
+
 def is_period(bump):
-    return is_str(bump) and period.search(bump) is not None    
+    return is_str(bump) and (period.search(bump) is not None or bump.lower() in _bumps)
 
 def is_bump(bump):
     return is_period(bump) or (is_int(bump) and bump<1500) or isinstance(bump, (datetime.timedelta, du.relativedelta.relativedelta))
@@ -343,12 +345,11 @@ def negative_bump(bump):
 
     """
     if is_period(bump):
+        bump = _bumps.get(bump.lower(),bump)
         return bump[1:] if bump.startswith('-') else '-' + bump
     else:            
         return -bump
     
-_bumps = {'spot' : '0b', 'on' : '1b', 'o/n' : '1b', 'tn' : '2b', 't/n': '2b', 'sn' : '3b', 's/n' : '3b'}
-
 def dt_bump(t, *bumps, aggregate = 'last', eom = None):
     """
     Parameters:
