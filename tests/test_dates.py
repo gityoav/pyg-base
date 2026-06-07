@@ -40,7 +40,11 @@ def test_none2dt():
     assert none2dt() >= now
     assert none2dt(lambda : dt(0)) == dt(0)
     assert none2dt(0) == 0
-    
+
+
+def test_dt_numpy():
+    assert dt(0) == dt(np.int64(0))
+    assert dt(0) < dt(np.float64(0.5)) and dt(np.float64(0.5)) < dt(1)
     
 def test_dt_date():
     t = datetime.date(2010,1,1)

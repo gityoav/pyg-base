@@ -220,6 +220,7 @@ def _ymd(y,m,d):
     return datetime.datetime(y,m,1) + (d-1) * DAY
 
 def num2dt(n):
+    n = int(n) if is_int(n) else float(n)
     i = int(n); f = datetime.timedelta(n - i)
     if i<=1500:
         return today() + i * DAY + f
@@ -411,7 +412,7 @@ def dt_bump(t, *bumps, aggregate = 'last', eom = None):
         return NaT
     for bump in bumps:
         if is_int(bump):
-            t = t + DAY * bump
+            t = t + DAY * int(bump)
         elif isinstance(bump, (datetime.timedelta, du.relativedelta.relativedelta)):
             t = t + bump
         elif is_str(bump):
