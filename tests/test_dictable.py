@@ -15,6 +15,11 @@ def test_dictable_init_Excel():
     assert dictable(df) == rs
 
 
+def test_dictable_empty_csv():
+    assert dictable('c:/github/pyg-base/tests/empty.csv') == dictable([],['a','b'])
+    assert dictable([['a', 'b']]) == dictable([],['a','b'])
+
+
 def test_dictable_add_0():
     rs = dictable(a = [1,2])
     assert sum([rs,rs]) == dictable(a = [1,2,1,2])

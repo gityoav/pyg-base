@@ -192,7 +192,7 @@ def _data_columns_as_dict(data, columns = None):
             elif is_dicts(data):
                 return dict_concat(data)
             elif min([isinstance(i, list) for i in data]):
-                return dict(zipper(data[0], zipper(*data[1:])))
+                return {key: [] for key in data[0]} if len(data) == 1 else dict(zipper(data[0], zipper(*data[1:])))
             else:
                 return dict(data = data)
         elif isinstance(data, dict):
