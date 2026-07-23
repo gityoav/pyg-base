@@ -96,7 +96,41 @@ def eq(x, y):
 
 veq = np.vectorize(eq)
 
+def _is_num(value):
+    return isinstance(value, (int, np.int64, np.int32, np.int16, np.int8, float, np.float16, np.float32, np.float64))
 
+
+def near(x, y, eps = 1e-10):
+    if x is y:
+        return True
+    elif isinstance(x, (tuple, list)):
+        return type(x) == type(y) and len(x) == len(y) and _eq_attrs(x,y,['__shape__']) and (len(x) == 0 or min([near(i,j,eps) for i,j in zip(x,y)]))
+    elif isinstance(x, np.ndarray):
+        return type(x) == type(y) and len(x) == len(y) and _eq_attrs(x,y,['__shape__']) and (0 in x.shape or np.all(vnear(x,y,eps)))
+    elif isinstance(x, (pd.DataFrame, pd.Series)):
+        return type(x)==type(y) and _eq_attrs(x,y, attrs = ['__shape__', 'index', 'columns']) and (0 in x.shape or np.all(vnear(x,y,eps)))
+    elif isinstance(x, dict):
+        if type(x) == type(y) and len(x)==len(y):
+            if len(x) == 0:
+                return True
+            xkey, xval = zip(*sorted(x.items()))
+            ykey, yval = zip(*sorted(y.items()))
+            return near(xkey, ykey, eps) and near(np.array(xval, dtype='object'), np.array(yval, dtype='object'), eps)
+        else:
+            return False
+    elif _is_num(x):
+        return True if (np.isnan(x) and np.isnan(y)) or abs(x-y) < eps else False
+    elif isinstance(x, partial):
+        return type(x) == type(y) and x.func == y.func and eq(x.keywords, y.keywords) and eq(x.args, y.args)
+    else:
+        try:
+            res = x == y
+            return np.all(res.__array__()) if hasattr(res, '__array__') else res
+        except Exception:
+            return False # if you really have no == supported, the two items are not the same
+
+vnear = np.vectorize(near)
+    
 def in_(x, seq):
     """
     Evaluates if x is in seq, avoiding issues such as these:
