@@ -1,4 +1,4 @@
-from pyg_base import eq
+from pyg_base import eq, near, drange
 import numpy as np
 import pandas as pd
 import datetime
@@ -52,3 +52,19 @@ def test_eq_weird():
             raise ValueError('weird')
     x = Weird(); y = Weird()
     assert not eq(x, y)    
+
+
+def test_near():
+    a = np.random.normal(0,1, 10000)
+    b = a+1e-11
+    assert not eq(a,b) and near(a,b)
+    tsa = pd.Series(a, drange(-9999))
+    tsb = pd.Series(b, drange(-9999))
+    assert not eq(tsa,tsb) and near(tsa,tsb)
+    a[np.random.normal(0,1,10000)>1] = np.nan
+    assert not near(a,b)
+    b[np.isnan(a)] = np.nan
+    assert not eq(a,b) and near(a,b)
+    assert near('a', 'a')    
+    assert near([a,b], [b,a])    
+
