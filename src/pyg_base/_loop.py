@@ -11,29 +11,6 @@ _dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
 def _is_int(dtype) -> bool:
     return np.dtype(dtype).kind in 'iu'
 
-def _int2float(a, cast = True):
-    """
-    Converts integer arrays/series/frames so that the numpy layer below can rely on floats and on np.nan existing.
-    cast = False leaves everything alone; cast = <dtype> targets that dtype rather than float.
-    """
-    if cast is False:
-        return a
-    dtype = float if cast is True else cast
-    if isinstance(a, (list, tuple)):
-        return type(a)([_int2float(v, cast) for v in a])
-    elif isinstance(a, dict):
-        return type(a)({k: _int2float(v, cast) for k, v in a.items()})
-    if (is_series(a) or is_arr(a)) and _is_int(a.dtype):
-        return a.astype(dtype)
-    if is_df(a):
-        if hasattr(a, 'dtype'):
-            if _is_int(a.dtype):
-                return a.astype(dtype)
-        else:
-            ints = {k: dtype for k, v in dict(a.dtypes).items() if _is_int(v)}
-            if len(ints):
-                return a.astype(ints)
-    return a
 
 def _zero():
     return 0
@@ -463,19 +440,26 @@ def _T(arg):
 
 _dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
 
-def _int2float(a):
+def _int2float(a, cast = True):
+    """
+    Converts integer arrays/series/frames so that the numpy layer below can rely on floats and on np.nan existing.
+    cast = False leaves everything alone; cast = <dtype> targets that dtype rather than float.
+    """
+    if cast is False:
+        return a
+    dtype = float if cast is True else cast
     if isinstance(a, (list, tuple)):
-        return type(a)([_int2float(v) for v in a])
+        return type(a)([_int2float(v, cast) for v in a])
     elif isinstance(a, dict):
-        return type(a)({k : _int2float(v) for k,v in a.items()})
-    if (is_series(a) or is_arr(a)) and a.dtype in _dtype_ints:
-        return a.astype(float)
+        return type(a)({k: _int2float(v, cast) for k, v in a.items()})
+    if (is_series(a) or is_arr(a)) and _is_int(a.dtype):
+        return a.astype(dtype)
     if is_df(a):
         if hasattr(a, 'dtype'):
-            if a.dtype in _dtype_ints:
-                return a.astype(float)
+            if _is_int(a.dtype):
+                return a.astype(dtype)
         else:
-            ints = {k: float for k,v in dict(a.dtypes).items() if v in _dtype_ints}
+            ints = {k: dtype for k, v in dict(a.dtypes).items() if _is_int(v)}
             if len(ints):
                 return a.astype(ints)
     return a
