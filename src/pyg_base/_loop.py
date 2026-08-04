@@ -6,6 +6,11 @@ from pyg_base._as_list import as_tuple, as_list
 
 __all__ = ['loops', 'len0', 'pd2np', 'shape']
 
+_dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
+
+def _is_int(dtype) -> bool:
+    return np.dtype(dtype).kind in 'iu'
+
 
 def _zero():
     return 0
@@ -435,19 +440,26 @@ def _T(arg):
 
 _dtype_ints = (np.dtype(np.int32), np.dtype(np.int64), np.dtype(np.int16))
 
-def _int2float(a):
+def _int2float(a, cast = True):
+    """
+    Converts integer arrays/series/frames so that the numpy layer below can rely on floats and on np.nan existing.
+    cast = False leaves everything alone; cast = <dtype> targets that dtype rather than float.
+    """
+    if cast is False:
+        return a
+    dtype = float if cast is True else cast
     if isinstance(a, (list, tuple)):
-        return type(a)([_int2float(v) for v in a])
+        return type(a)([_int2float(v, cast) for v in a])
     elif isinstance(a, dict):
-        return type(a)({k : _int2float(v) for k,v in a.items()})
-    if (is_series(a) or is_arr(a)) and a.dtype in _dtype_ints:
-        return a.astype(float)
+        return type(a)({k: _int2float(v, cast) for k, v in a.items()})
+    if (is_series(a) or is_arr(a)) and _is_int(a.dtype):
+        return a.astype(dtype)
     if is_df(a):
         if hasattr(a, 'dtype'):
-            if a.dtype in _dtype_ints:
-                return a.astype(float)
+            if _is_int(a.dtype):
+                return a.astype(dtype)
         else:
-            ints = {k: float for k,v in dict(a.dtypes).items() if v in _dtype_ints}
+            ints = {k: dtype for k, v in dict(a.dtypes).items() if _is_int(v)}
             if len(ints):
                 return a.astype(ints)
     return a
@@ -506,20 +518,29 @@ class pd2np(wrapper):
     >>> assert pd2np(lambda x, a: type(a))(x = pd.Series([1,2,3]), a = pd.Series([1,2,3])) == np.ndarray
     
     """
-    def __init__(self, function = None, exc = None, function_fullargspec = None):
-        super(pd2np, self).__init__(function = function, exc = as_list(exc), function_fullargspec = function_fullargspec)
-    
+    def __init__(self, function = None, exc = None, cast = True, function_fullargspec = None):
+        super(pd2np, self).__init__(function = function, exc = as_list(exc), cast = cast,
+                                    function_fullargspec = function_fullargspec)
+
+    def _convert(self, value, to_numpy):
+        """pandas -> numpy, then integer -> float. Both are recursive over lists/tuples/dicts already."""
+        if to_numpy:
+            value = _values(value)
+        return _int2float(value, self.cast)
+
     def wrapped(self, *args, **kwargs):
         arg = getcallarg(self.function, args, kwargs)
-        excluded = {key:value for key, value in kwargs.items() if key in self.exc}
-        kwargs_ = {key:value for key, value in kwargs.items() if key not in self.exc}
-        if not is_pd(arg):
-            args_, kwargs_ = _int2float((args, kwargs_))
-            return self.function(*args_, **kwargs_, **excluded)
-        args_, kwargs_ = _int2float(_values((args, kwargs_)))
-        res = self.function(*args_, **kwargs_, **excluded)
-        return _np2pd(res, arg)
-
+        to_numpy = is_pd(arg)
+        if not self.exc:
+            args_, kwargs_ = self._convert((args, kwargs), to_numpy)
+        else:
+            names = self.fullargspec.args
+            args_ = tuple(value if i < len(names) and names[i] in self.exc else self._convert(value, to_numpy)
+                          for i, value in enumerate(args))
+            kwargs_ = {key: value if key in self.exc else self._convert(value, to_numpy)
+                       for key, value in kwargs.items()}
+        res = self.function(*args_, **kwargs_)
+        return _np2pd(res, arg) if to_numpy else res
 
 
 @loops(types = (dict, list, tuple))
