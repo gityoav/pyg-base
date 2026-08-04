@@ -538,8 +538,8 @@ class dictable(Dict):
             elif isinstance(value, Pattern):
                 res = res[[is_str(r) and value.search(r) is not None for r in res[key]]]                
             else:
-                value = as_list(value)
-                res = res[[r in value for r in res[key]]]
+                values = as_list(value)
+                res = res[[r == value or r in values for r in res[key]]]
         if len(res) == 0:
             return type(self)([], self.keys())
         return res                

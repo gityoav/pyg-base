@@ -20,6 +20,13 @@ def test_dictable_empty_csv():
     assert dictable([['a', 'b']]) == dictable([],['a','b'])
 
 
+def test_dictable_inc_tuple_values():
+    rs = dictable(a=[(1,2), (3,4)], c=[3,4])
+    assert len(rs.inc(a=(1,2))) == 1
+    b = dictable(a=[(1,2), (4,5)], b = [1,2])
+    j = rs.join(b, 'a')
+    assert len(j) == 1 and j.b[0] == 1
+
 def test_dictable_add_0():
     rs = dictable(a = [1,2])
     assert sum([rs,rs]) == dictable(a = [1,2,1,2])
