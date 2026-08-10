@@ -215,9 +215,11 @@ def test_bi():
 
 def test_sub_div_mul_add_handle_none_b():
     for f in [div_, add_, sub_, mul_]:
-        assert f(None, None) is None
-        assert f(None) is None
-        assert f(1) == 1
+        for a in [None, 1]:
+            assert f(a, None) is a
+            assert f(a, []) is a
+            assert f(a) is a
+    
 
 def test_df_fillna():
     from numpy import nan

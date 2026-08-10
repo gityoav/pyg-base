@@ -1270,7 +1270,7 @@ def div_(a, b = None, join = 'ij', method = None, columns = 'ij'):
         a = mul_(a, join = join, method = method, columns = columns)
     if isinstance(b, list):
         b = mul_(b, join = join, method = method, columns = columns)
-    elif b is None:
+    if b is None:
         return a
     return _div_(a, b, join = join, method = method, columns = columns)
 
@@ -1321,7 +1321,7 @@ def sub_(a, b = None, join = 'ij', method = None, columns = 'ij'):
         a = add_(a, join = join, method = method, columns = columns)
     if isinstance(b, list):
         b = add_(b, join = join, method = method, columns = columns)
-    elif b is None:
+    if b is None:
         return a
     return _sub_(a, b, join = join, method = method, columns = columns)
 
