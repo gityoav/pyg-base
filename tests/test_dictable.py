@@ -23,9 +23,13 @@ def test_dictable_empty_csv():
 def test_dictable_inc_tuple_values():
     rs = dictable(a=[(1,2), (3,4)], c=[3,4])
     assert len(rs.inc(a=(1,2))) == 1
+    assert len(rs.exc(a=(1,2))) == 1
     b = dictable(a=[(1,2), (4,5)], b = [1,2])
     j = rs.join(b, 'a')
     assert len(j) == 1 and j.b[0] == 1
+    x = rs / b
+    assert len(x) == 1 and x.c[0] == 4    
+
 
 def test_dictable_add_0():
     rs = dictable(a = [1,2])

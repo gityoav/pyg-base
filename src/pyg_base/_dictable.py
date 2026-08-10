@@ -218,7 +218,8 @@ def _row_check(row, key, value):
         return is_nan(v)
     if isinstance(value, Pattern):
         return is_str(v) and value.search(v) is not None
-    return v in as_list(value)
+    values = as_list(value)
+    return v==value or v in values
 
 
 def and_(filters):
