@@ -213,6 +213,12 @@ def test_bi():
             assert eq(f(v,c), o(v,c))
 
 
+def test_sub_div_mul_add_handle_none_b():
+    for f in [div_, add_, sub_, mul_]:
+        assert f(None, None) is None
+        assert f(None) is None
+        assert f(1) == 1
+
 def test_df_fillna():
     from numpy import nan
     dates =  drange(dt(2000), dt(2000,1,14))
