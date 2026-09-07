@@ -634,10 +634,17 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
     >>> assert is_series(df_concat([p,pq], axis = 0)) ## multiple columns, handled as series
 
     """
-    join = _joins.get(join, join)
+        
     if isinstance(objs, dict):
         columns = list(objs.keys())
         objs = list(objs.values())
+
+    if isinstance(join, (pd.Series, pd.DataFrame, pd.Index, pd.DatetimeIndex)):
+        objs = df_reindex(objs, join, method = method, limit = limit)
+        join = 'outer'        
+    else:
+        join = _joins.get(join, join)
+
     if isinstance(objs, (list, tuple)):
         df_objs = [o for o in objs if is_pd(o)]
         np_objs = [o for o in objs if is_arr(o)]
