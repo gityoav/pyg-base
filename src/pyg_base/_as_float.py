@@ -1,5 +1,6 @@
 from pyg_base._dict import loop
 from pyg_base._types import is_str, is_num
+from decimal import Decimal
 
 _endings = [('million',6), ('billion', 9), ('trillion', 12), ('percent', -2), ('mln', 6), ('bln', 9), ('tln', 12), ('trl', 12), ('pct', -2), ('mn', 6), ('bn', 9), ('tn', 12), ('bp', -4), ('%', -2), ('m', 6), ('k', 3), ('b', 9), ('t', 12), ('crore', 7), ('lakh', 5)]
 _n = [(k, 10**v) for k, v in _endings]
@@ -59,6 +60,8 @@ def _as_float(value):
             return res * mult
         except ValueError:
             return value
+    elif isinstance(value, Decimal):
+        return float(value)
     else:
         return value
 
