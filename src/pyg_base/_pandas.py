@@ -659,7 +659,7 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
                 else:
                     raise TypeError('cannot concatenate vertically dataframes and non-dataframes')
             else:
-                res = pd.concat(df_objs, axis = axis, join = join)                
+                res = pd.concat(df_objs, axis = axis, join = join)           
         elif len(np_objs):
             ns = set([o.shape[0] for o in np_objs])
             if len(ns) == 1:
@@ -676,13 +676,16 @@ def df_concat(objs, columns = None, axis = 1, join = 'outer', method = None, lim
         res = objs.copy()
     else:
         raise ValueError('not sure how to convert this into a single dataframe')
-    if columns is not None and is_df(res):
-        if isinstance(columns, list):
-            res.columns = columns 
-        elif is_str(columns):
-            res.columns = as_list(columns)
-        else:
-            res = res.rename(columns = columns)
+    if is_df(res):
+        if axis == 1:
+            res = res.sort_index()                    
+        if columns is not None:
+            if isinstance(columns, list):
+                res.columns = columns 
+            elif is_str(columns):
+                res.columns = as_list(columns)
+            else:
+                res = res.rename(columns = columns)
     res = df_fillna(res, method = method, axis = 1 if axis == 0 else 1, limit = limit)
     return res
 
