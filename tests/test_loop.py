@@ -301,3 +301,16 @@ def test_loop_last_axis():
     assert eq(f(a,1), f(a, a))
     f = loop_last_axis(lambda a ,b : a + b)
     assert eq(f(a,a), a+a)
+
+
+@loop(list, tuple, dict)
+def _add(a, b):
+    return a + b
+
+
+def test_loop_passes_positional_args_nested():
+    assert _add([[1, 2], [3, 4]], 10) == [[11, 12], [13, 14]]
+
+
+def test_loop_passes_positional_args_dict_nested():
+    assert _add(dict(a=[1, 2], b=(3, 4)), 10) == dict(a=[11, 12], b=(13, 14))

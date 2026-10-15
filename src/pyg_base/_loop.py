@@ -327,7 +327,7 @@ class loops(wrapper):
             args_, kwargs_ = args, kwargs
         if isinstance(arg, pd.Series) and pd.Series in self.types and not is_ts(arg):
             keys = sorted(arg.index)
-            res = {key : self._wrapped(arg[key], (_item_by_key(a,key,keys) for a in args_), {k : _item_by_key(v,key,keys) for k,v in kwargs_.items()}) for key in arg.index}
+            res = {key : self._wrapped(arg[key], tuple(_item_by_key(a,key,keys) for a in args_), {k : _item_by_key(v,key,keys) for k,v in kwargs_.items()}) for key in arg.index}
             return type(arg)(res)          
         else:
             return self._wrapped(arg, args_, kwargs_)
@@ -336,7 +336,7 @@ class loops(wrapper):
         axis = kwargs.pop('axis', 0)
         if isinstance(arg, dict) and type(arg) in self.types:
             keys = sorted(arg.keys()) 
-            res = {key : self._wrapped(arg[key], (_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
+            res = {key : self._wrapped(arg[key], tuple(_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
             return type(arg)(res)
         elif isinstance(arg, pd.DataFrame) and pd.DataFrame in self.types:
             if axis in (1,-1):
@@ -346,7 +346,7 @@ class loops(wrapper):
                 return add_index_and_columns(res, arg)
             else:
                 keys = sorted(arg.columns)
-                res = [self._wrapped(arg[key], (_item_by_key(a,key,keys,i) for a in args), {k : _item_by_key(v,key,keys,i) for k,v in kwargs.items()}) for i, key in enumerate(arg.columns)]
+                res = [self._wrapped(arg[key], tuple(_item_by_key(a,key,keys,i) for a in args), {k : _item_by_key(v,key,keys,i) for k,v in kwargs.items()}) for i, key in enumerate(arg.columns)]
                 rtn = axis0_to_dataframe(res, arg)
                 return rtn
         elif isinstance(arg, pd.Series):
@@ -359,11 +359,11 @@ class loops(wrapper):
                     return self.T(arg, args, kwargs)
                 else:
                     n = arg.shape[1]
-                    res = [self._wrapped(_item_by_i(arg,i,n), (_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
+                    res = [self._wrapped(_item_by_i(arg,i,n), tuple(_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
                     return axis0_to_array(res, arg)
         elif isinstance(arg, self.types) and not isinstance(arg, dict):
             n = len(arg)
-            res = [self._wrapped(arg[i], (_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]                            
+            res = [self._wrapped(arg[i], tuple(_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
             return type(arg)(res)
         else:
             return self.function(arg, *args, **kwargs)
