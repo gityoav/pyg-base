@@ -641,3 +641,8 @@ def test_unlist_partial():
 
     assert rs.unlist('a') == rs.unlist('a', 'b')
     assert rs.unlist('a') == rs.unlist(['a', 'b'])
+    
+def test_dictable_xyz_empty():
+    rs = dictable([], ['a','b','c','d'])
+    x = ['a','b']; y = 'c'; z = 'd'; agg = sum
+    assert rs.xyz(x,y,z,agg) == dictable([], x + [y])
