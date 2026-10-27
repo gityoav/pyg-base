@@ -1357,7 +1357,7 @@ class dictable(Dict):
         xykeys = x + as_tuple(y)
         xys, ids = self._listby(xykeys)
         if len([xy for xy in xys if xy]) == 0:
-            return type(self)([], xykeys)
+            return type(self)([], x)
         zs = self[z]
         y_ = y if is_str(y) else '_columns'
         rs = type(self)(xys, x + (y_,))        

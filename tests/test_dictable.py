@@ -645,4 +645,4 @@ def test_unlist_partial():
 def test_dictable_xyz_empty():
     rs = dictable([], ['a','b','c','d'])
     x = ['a','b']; y = 'c'; z = 'd'; agg = sum
-    assert rs.xyz(x,y,z,agg) == dictable([], x + [y])
+    assert rs.xyz(x,y,z,agg) == dictable([], x)
