@@ -322,10 +322,10 @@ class loops(wrapper):
 
     def wrapped(self, *args, **kwargs):
         names = getargs(self)
-        name = self.top(names)
+        name = self.name(names)
         position = self.position(names, name)
         if len(args) > position:
-            arg, args_, kwargs = args[position], args[:position]+args[position+1:], kwargs
+            arg, args_, kwargs_ = args[position], args[:position]+args[position+1:], kwargs
         elif name in kwargs:
             arg = kwargs.pop(name)
             args_, kwargs_ = args + tuple(kwargs.pop(nm) for nm in names[len(args): position]), kwargs
