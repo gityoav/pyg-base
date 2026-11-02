@@ -162,17 +162,18 @@ class Dict(dictattr):
 
 
 types = (dict, )
-def loop(*types):
+def loop(*types, over = None):
     """
     returns an instance of loops(types = types)
     """
     types = as_tuple(types)
     if dict in types:
         types = types + tuple(dict_like_type for dict_like_type in (OrderedDict, dictattr, Dict) if dict_like_type not in types)
-    return loops(types = types)
+    return loops(types = types, over = over)
 
-loop_all = loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict)
 
+def loop_all(over = None):
+    return loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict, over = over)
 
 
 def dict_invert(d):

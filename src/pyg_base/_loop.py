@@ -301,72 +301,94 @@ class loops(wrapper):
     
     """
 
-    def __init__(self, function = None, types = None, function_fullargspec = None):
-        super(loops, self).__init__(function = function, types = as_tuple(types), function_fullargspec = function_fullargspec)
+    def __init__(self, function = None, types = None, over = None, function_fullargspec = None):
+        super(loops, self).__init__(function = function, types = as_tuple(types), function_fullargspec = function_fullargspec, over = over)
 
-    @property
-    def first(self):
-        args = getargs(self)
-        return args[0] if len(args) else None
+    def first(self, names):
+        return names[0] if len(names) else None
+
+    def name(self, names):
+        return self.get('over') or self.first(names)
+
+    def position(self, names, name):
+        return 0 if name is None else names.index(name)
     
-    def T(self, arg, args, kwargs):
+    def T(self, arg, args, kwargs, name, names, position):
         arg_ = _T(arg)
         args_ = _T(args)
         kwargs_ = _T(kwargs)
-        res = self._wrapped(arg_, args_, kwargs_)
-        return _T(res)
+        res = self._wrapped(arg_, args_, kwargs_, name = name, names = names, position = position)
+        return _T(res)    
 
     def wrapped(self, *args, **kwargs):
-        top = self.first
-        if len(args) == 0 and not top in kwargs:
-            return self.function(*args, **kwargs)
-        if len(args):
-            arg, args_, kwargs_ = args[0], args[1:], kwargs
+        names = getargs(self)
+        name = self.top(names)
+        position = self.position(names, name)
+        if len(args) > position:
+            arg, args_, kwargs = args[position], args[:position]+args[position+1:], kwargs
+        elif name in kwargs:
+            arg = kwargs.pop(name)
+            args_, kwargs_ = args + tuple(kwargs.pop(nm) for nm in names[len(args): position]), kwargs
         else:
-            arg = kwargs.pop(top)
-            args_, kwargs_ = args, kwargs
+            return self.function(*args, **kwargs)
+
         if isinstance(arg, pd.Series) and pd.Series in self.types and not is_ts(arg):
             keys = sorted(arg.index)
-            res = {key : self._wrapped(arg[key], tuple(_item_by_key(a,key,keys) for a in args_), {k : _item_by_key(v,key,keys) for k,v in kwargs_.items()}) for key in arg.index}
+            res = {key : self._wrapped(arg[key], tuple(_item_by_key(a,key,keys) for a in args_), 
+                                       {k : _item_by_key(v,key,keys) for k,v in kwargs_.items()},
+                                       name = name, names = names, position = position) for key in arg.index}
             return type(arg)(res)          
         else:
-            return self._wrapped(arg, args_, kwargs_)
+            return self._wrapped(arg, args_, kwargs_, name = name, names = names, position = position)
     
-    def _wrapped(self, arg, args, kwargs):
+    
+    def _wrapped(self, arg, args, kwargs, name, names, position):
         axis = kwargs.pop('axis', 0)
         if isinstance(arg, dict) and type(arg) in self.types:
             keys = sorted(arg.keys()) 
-            res = {key : self._wrapped(arg[key], tuple(_item_by_key(a,key,keys) for a in args), {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}) for key in arg.keys()}
+            res = {key : self._wrapped(arg[key], 
+                                       tuple(_item_by_key(a,key,keys) for a in args), 
+                                       {k : _item_by_key(v,key,keys) for k,v in kwargs.items()}, 
+                                       name = name, names = names, position = position) for key in arg.keys()}
             return type(arg)(res)
         elif isinstance(arg, pd.DataFrame) and pd.DataFrame in self.types:
             if axis in (1,-1):
-                res = self.T(arg, args, kwargs)
+                res = self.T(arg, args, kwargs, name = name, names = names, position = position)
                 if isinstance(res, (pd.DataFrame, pd.Series)) and len(res) == len(arg):
                     res.index = arg.index
                 return add_index_and_columns(res, arg)
             else:
                 keys = sorted(arg.columns)
-                res = [self._wrapped(arg[key], tuple(_item_by_key(a,key,keys,i) for a in args), {k : _item_by_key(v,key,keys,i) for k,v in kwargs.items()}) for i, key in enumerate(arg.columns)]
+                res = [self._wrapped(arg[key], 
+                                     tuple(_item_by_key(a,key,keys,i) for a in args), 
+                                     {k : _item_by_key(v,key,keys,i) for k,v in kwargs.items()}, 
+                                     name = name, names = names, position = position) for i, key in enumerate(arg.columns)]
                 rtn = axis0_to_dataframe(res, arg)
                 return rtn
         elif isinstance(arg, pd.Series):
-            return self.function(arg, *args, **kwargs)
+            return self.function(*args[:position], arg, *args[position:], **kwargs)
         elif isinstance(arg, np.ndarray) and np.ndarray in self.types:
             if len(arg.shape) <= 1:
-                return self.function(arg, *args, **kwargs) 
+                return self.function(*args[:position], arg, *args[position:], **kwargs) 
             else:
                 if axis in (1,-1):
-                    return self.T(arg, args, kwargs)
+                    return self.T(arg, args, kwargs, name = name, names = names, position = position)
                 else:
                     n = arg.shape[1]
-                    res = [self._wrapped(_item_by_i(arg,i,n), tuple(_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
+                    res = [self._wrapped(_item_by_i(arg,i,n), 
+                                         tuple(_item_by_i(a,i,n) for a in args), 
+                                         {k: _item_by_i(v,i,n) for k, v in kwargs.items()}, 
+                                         name = name, names = names, position = position) for i in range(n)]
                     return axis0_to_array(res, arg)
         elif isinstance(arg, self.types) and not isinstance(arg, dict):
             n = len(arg)
-            res = [self._wrapped(arg[i], tuple(_item_by_i(a,i,n) for a in args), {k: _item_by_i(v,i,n) for k, v in kwargs.items()}) for i in range(n)]
+            res = [self._wrapped(arg[i], 
+                                 tuple(_item_by_i(a,i,n) for a in args), 
+                                 {k: _item_by_i(v,i,n) for k, v in kwargs.items()}, 
+                                 name = name, names = names, position = position) for i in range(n)]
             return type(arg)(res)
         else:
-            return self.function(arg, *args, **kwargs)
+            return self.function(*args[:position], arg, *args[position:], **kwargs)
 
 
 def is_tree_deep(value, depth = 1):
