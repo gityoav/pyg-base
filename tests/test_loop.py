@@ -314,3 +314,24 @@ def test_loop_passes_positional_args_nested():
 
 def test_loop_passes_positional_args_dict_nested():
     assert _add(dict(a=[1, 2], b=(3, 4)), 10) == dict(a=[11, 12], b=(13, 14))
+    
+
+@loop(list, tuple, dict, over = 'b')
+def _addb(a, b, c=0):
+    return a + b + c
+
+
+def test_loop_over():
+    assert _addb(a = 10, b = dict(a=[1, 2], b=(3, 4))) == dict(a=[11, 12], b=(13, 14))
+    assert _addb(10, dict(a=[1, 2], b=(3, 4))) == dict(a=[11, 12], b=(13, 14))
+    assert _addb(10, dict(a=[1, 2], b=(3, 4)), c = [4,5]) == dict(a=[11+4, 12+5], b=(13+4, 14+5))
+    assert _addb(dict(a = 10, b = 20), dict(a=[1, 2], b=(3, 4)), c = [4,5]) == dict(a=[10+1+4, 10+2+5], b=(20+3+4, 20+4+5))
+
+    
+def test_loop_over_bad():
+    @loop(list, tuple, dict, over = 'c')
+    def _addc(a, b):
+        return a + b
+    with pytest.raises(ValueError):
+        assert _addc(a = 10, b = 20)
+
