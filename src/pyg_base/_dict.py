@@ -172,8 +172,8 @@ def loop(*types, over = None):
     return loops(types = types, over = over)
 
 
-def loop_all(over = None):
-    return loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict, over = over)
+loop_all = loop(pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict)
+
 
 
 def dict_invert(d):
